@@ -398,16 +398,16 @@ def smoke(
     import uuid
 
     try:
+        # Always load via from_env so master/provider key equality checks apply
+        # even when --base-url overrides the transport endpoint.
+        cfg = GatewayConfig.from_env(timeout=timeout)
         if base_url:
+            from dataclasses import replace
+
             root = base_url.rstrip("/")
             if not root.endswith("/v1"):
                 root = f"{root}/v1"
-            key = (os.environ.get("LITELLM_VIRTUAL_KEY") or "").strip()
-            if not key:
-                raise RuntimeError("LITELLM_VIRTUAL_KEY is required for smoke")
-            cfg = GatewayConfig(base_url=root, virtual_key=key, timeout=timeout)
-        else:
-            cfg = GatewayConfig.from_env(timeout=timeout)
+            cfg = replace(cfg, base_url=root)
     except Exception as exc:
         typer.secho(f"config error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(2) from exc

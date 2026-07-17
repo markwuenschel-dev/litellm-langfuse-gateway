@@ -63,6 +63,37 @@ def test_smoke_skips_without_llg_live(monkeypatch) -> None:  # type: ignore[no-u
     assert "SKIP" in combined or "LLG_LIVE" in combined
 
 
+def test_smoke_base_url_still_rejects_master_key(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """--base-url must not bypass from_env master/provider equality checks."""
+    monkeypatch.setenv("LLG_LIVE", "1")
+    monkeypatch.setenv("LITELLM_MASTER_KEY", "sk-master-admin-test")
+    monkeypatch.setenv("LITELLM_VIRTUAL_KEY", "sk-master-admin-test")
+    monkeypatch.delenv("LLG_DISALLOW_MASTER", raising=False)
+    result = runner.invoke(
+        app,
+        ["smoke", "--alias", "llm-general", "--base-url", "http://proxy.test:4000/v1"],
+    )
+    assert result.exit_code == 2
+    combined = result.stdout + result.stderr
+    assert "config error" in combined.lower() or "MASTER" in combined
+
+
+def test_smoke_base_url_still_rejects_provider_key(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """--base-url must not bypass provider-key equality checks from from_env."""
+    monkeypatch.setenv("LLG_LIVE", "1")
+    monkeypatch.setenv("LITELLM_VIRTUAL_KEY", "sk-openai-provider-secret")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-openai-provider-secret")
+    monkeypatch.delenv("LITELLM_MASTER_KEY", raising=False)
+    monkeypatch.delenv("LLG_DISALLOW_MASTER", raising=False)
+    result = runner.invoke(
+        app,
+        ["smoke", "--alias", "llm-general", "--base-url", "http://proxy.test:4000/v1"],
+    )
+    assert result.exit_code == 2
+    combined = result.stdout + result.stderr
+    assert "config error" in combined.lower() or "OPENAI" in combined
+
+
 def test_reconcile_cost_stub_without_live(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.delenv("LLG_LIVE", raising=False)
     result = runner.invoke(app, ["reconcile-cost", "--run-id", "unit-test"])
