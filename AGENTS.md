@@ -71,6 +71,7 @@ docker-compose.redis.yml# Thin include shim → infra/llm-gateway/compose.redis.
 docs/llm-platform/      # Architecture, inventory, incident-recovery, platform docs
 examples/               # Minimal client examples (Python + TypeScript)
 src/llg/                # Consolidated ops CLI (`uv run llg …`)
+src/llm_client/         # App GatewayClient + metadata validation + error types
 scripts/                # Thin re-exports of llg helpers (backward compatible)
 .github/workflows/      # CI
 ```
@@ -82,7 +83,9 @@ scripts/                # Thin re-exports of llg helpers (backward compatible)
 | Local stack up | Copy `.env.example` → `.env`, fill keys, `uv run llg up` (or `docker compose -f infra/llm-gateway/compose.yaml up -d`) |
 | Add a model alias | Edit `infra/llm-gateway/litellm-config.yaml` `model_list`; keep provider keys in env |
 | Enable Redis | `uv run llg up --redis` (or compose redis overlay) and set Redis env vars |
-| Wire Langfuse | Set `LANGFUSE_*` in `.env`; ensure `success_callback` / OTEL settings in litellm-config |
+| Wire Langfuse | Set `LANGFUSE_*` in `.env` (incl. optional `LANGFUSE_OTEL_HOST`); `langfuse_otel` success/failure callbacks in litellm-config |
+| App client | `src/llm_client` (`GatewayClient` + metadata contract); `examples/reference_workflow.py`; virtual key only (`LLG_DISALLOW_MASTER` default on) |
+| Metadata contract | `config/llm/metadata-contract.schema.json` + `llm_client.metadata` |
 | Validate config | `uv run llg config validate` |
 | Health check | `uv run llg health` / `llg health --path /health/readiness` or `GET /health/liveliness` |
 | Virtual keys | `uv run llg keys create --models … --max-budget … --rpm …`; `llg keys list`; `llg keys revoke` (needs `LITELLM_MASTER_KEY`; never print master) |

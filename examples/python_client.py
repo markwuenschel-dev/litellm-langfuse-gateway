@@ -1,10 +1,16 @@
 """Minimal OpenAI-SDK client pointed at the local LiteLLM gateway.
 
+Uses a **virtual key only** — never the master key. Provision with:
+  uv run llg keys create --models llm-general --max-budget 5 --rpm 30 --key-alias my-app
+
 Usage:
-  export LITELLM_VIRTUAL_KEY=sk-...   # or LITELLM_MASTER_KEY for bootstrap only
+  export LITELLM_VIRTUAL_KEY=sk-...
   export LITELLM_BASE_URL=http://localhost:4000/v1
-  pip install openai
-  python examples/python_client.py
+  # optional: LITELLM_MODEL=llm-general
+  uv run --extra clients python examples/python_client.py
+
+Prefer ``examples/reference_workflow.py`` + ``llm_client.GatewayClient`` for
+metadata and error mapping.
 """
 
 from __future__ import annotations
@@ -17,13 +23,32 @@ def main() -> int:
     try:
         from openai import OpenAI
     except ImportError:
-        print("Install the OpenAI SDK: pip install openai", file=sys.stderr)
+        print(
+            "Install the OpenAI SDK: uv sync --extra clients  (or pip install openai)",
+            file=sys.stderr,
+        )
         return 1
 
-    api_key = os.environ.get("LITELLM_VIRTUAL_KEY") or os.environ.get("LITELLM_MASTER_KEY")
+    api_key = (os.environ.get("LITELLM_VIRTUAL_KEY") or "").strip()
     if not api_key:
         print(
-            "Set LITELLM_VIRTUAL_KEY (preferred) or LITELLM_MASTER_KEY in the environment.",
+            "Set LITELLM_VIRTUAL_KEY (virtual key only; master key is admin-only).\n"
+            "  uv run llg keys create --models llm-general --max-budget 5 --rpm 30",
+            file=sys.stderr,
+        )
+        return 1
+
+    master = (os.environ.get("LITELLM_MASTER_KEY") or "").strip()
+    disallow = os.environ.get("LLG_DISALLOW_MASTER", "1").strip().lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }
+    if disallow and master and api_key == master:
+        print(
+            "LITELLM_VIRTUAL_KEY must not be the master key "
+            "(set LLG_DISALLOW_MASTER=0 only for break-glass).",
             file=sys.stderr,
         )
         return 1

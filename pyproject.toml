@@ -59,10 +59,11 @@ Documentation = "https://github.com/Nalakram/litellm-langfuse-gateway#readme"
 Issues = "https://github.com/Nalakram/litellm-langfuse-gateway/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/llg", "scripts"]
+packages = ["src/llg", "src/llm_client", "scripts"]
 
 [tool.hatch.build.targets.wheel.sources]
 "src/llg" = "llg"
+"src/llm_client" = "llm_client"
 
 [tool.ruff]
 target-version = "py311"
@@ -84,7 +85,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["llg", "scripts"]
+known-first-party = ["llg", "llm_client", "scripts"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -100,5 +101,5 @@ python_version = "3.11"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
-packages = ["llg", "scripts"]
+packages = ["llg", "llm_client", "scripts"]
 mypy_path = "src"

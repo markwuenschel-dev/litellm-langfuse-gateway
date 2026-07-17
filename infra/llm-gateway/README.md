@@ -135,3 +135,53 @@ uv run llg health
 uv run llg health --path /health/readiness
 # legacy: uv run python scripts/healthcheck.py
 ```
+
+## Langfuse Cloud (OTEL export)
+
+LiteLLM exports per-call generation telemetry via the **`langfuse_otel`** callback
+(pin-era form in `litellm-config.yaml`):
+
+```yaml
+litellm_settings:
+  success_callback: ["langfuse_otel"]
+  failure_callback: ["langfuse_otel"]
+```
+
+Set these in `.env` (see `.env.example`):
+
+| Variable | Role |
+| --- | --- |
+| `LANGFUSE_PUBLIC_KEY` | Langfuse project public key (`pk-lf-…`) |
+| `LANGFUSE_SECRET_KEY` | Langfuse project secret key (`sk-lf-…`) |
+| `LANGFUSE_HOST` | UI/API host — EU `https://cloud.langfuse.com`, US `https://us.cloud.langfuse.com` |
+| `LANGFUSE_OTEL_HOST` | Optional OTEL ingest override when your plan/region requires a distinct endpoint |
+
+Compose passes these through to the `litellm` service. **Missing or invalid Langfuse
+credentials must not break the LLM path** — fix telemetry separately (proxy logs may
+show export errors; never log secret values).
+
+Use separate Langfuse projects (keys) for dev vs prod. App workflows should create
+root traces in Langfuse and pass `metadata.trace_id` + `metadata.request_id` on
+gateway calls (see `config/llm/metadata-contract.schema.json` and
+`examples/reference_workflow.py`).
+
+Hermetic config check / live-gated probe:
+
+```bash
+uv run pytest tests/integration/test_langfuse_export.py -q
+# Live optional: $env:LLG_LIVE="1"; $env:LITELLM_VIRTUAL_KEY="sk-..."; uv run pytest tests/integration/test_langfuse_export.py
+```
+
+## Application client
+
+```bash
+# Virtual key only (never master key in apps)
+export LITELLM_VIRTUAL_KEY=sk-...
+export LITELLM_BASE_URL=http://localhost:4000/v1
+uv run python examples/reference_workflow.py
+# OpenAI SDK thin example:
+uv run --extra clients python examples/python_client.py
+```
+
+Python package: `src/llm_client` (`GatewayClient`, `RequestMetadata`, error types).
+`LLG_DISALLOW_MASTER` defaults on — virtual key must not equal `LITELLM_MASTER_KEY`.

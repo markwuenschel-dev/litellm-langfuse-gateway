@@ -73,7 +73,7 @@ Edit `.env`:
 
 1. Generate strong values for `LITELLM_MASTER_KEY`, `LITELLM_SALT_KEY`, and `POSTGRES_PASSWORD`.
 2. Set provider keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`, …).
-3. Set `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and `LANGFUSE_HOST` (Cloud host).
+3. Set `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and `LANGFUSE_HOST` (Cloud host; optional `LANGFUSE_OTEL_HOST`).
 
 > **Salt key:** generate once and store offline. Changing `LITELLM_SALT_KEY` later can make encrypted proxy data unreadable.
 

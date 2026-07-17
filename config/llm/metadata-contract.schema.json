@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Nalakram/litellm-langfuse-gateway/config/llm/metadata-contract.schema.json",
+  "title": "LLM gateway request metadata",
+  "description": "Bounded metadata attached to LiteLLM chat requests for spend attribution and Langfuse correlation. Forbidden: secrets, Authorization headers, cookies, raw PII.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_id",
+    "service",
+    "feature",
+    "environment",
+    "release",
+    "model_alias"
+  ],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique id for this app request (UUID)."
+    },
+    "service": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Calling service or app name."
+    },
+    "feature": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Feature or product surface initiating the call."
+    },
+    "environment": {
+      "type": "string",
+      "enum": ["development", "staging", "production"],
+      "description": "Deployment environment."
+    },
+    "release": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Git SHA or semver of the calling app."
+    },
+    "model_alias": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Gateway model alias requested (echo of model field)."
+    },
+    "trace_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Langfuse (or OTEL) root trace id when the app creates a root trace."
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Optional session correlation id (pseudonymous)."
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Optional pseudonymous user id (no raw email/name/MRN)."
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "cost_center": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "workflow_type": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "retry_attempt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "fallback_used": {
+      "type": "boolean"
+    },
+    "experiment_variant": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  }
+}

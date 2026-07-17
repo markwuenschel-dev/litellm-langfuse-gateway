@@ -62,9 +62,11 @@ litellm_settings:
   json_logs: true
   set_verbose: false
 
-  # Request-level telemetry → Langfuse (token, cost, latency)
-  # Also set LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST in the environment.
-  # Pin-era form: success/failure callbacks (also acceptable: callbacks: ["langfuse_otel"]).
+  # Request-level telemetry → Langfuse (token, cost, latency) via langfuse_otel.
+  # Env: LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST
+  #      (optional LANGFUSE_OTEL_HOST for regional/OTEL ingest override).
+  # Pin v1.92: success/failure callback lists (also acceptable: callbacks: ["langfuse_otel"]).
+  # Langfuse outage / bad credentials must not fail the primary LLM path.
   success_callback: ["langfuse_otel"]
   failure_callback: ["langfuse_otel"]
 

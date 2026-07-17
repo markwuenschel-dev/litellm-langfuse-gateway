@@ -102,3 +102,12 @@ Values never go in git or model YAML. See `infra/llm-gateway/.env.example` and `
 1. Call models through the LiteLLM OpenAI-compatible base URL (virtual key auth).
 2. Instrument app-level traces in Langfuse (retrieval, tools, agents, sessions/users).
 3. Rely on LiteLLM’s `langfuse_otel` callback for request-level token/cost/latency generation data.
+
+**In-repo client:** `src/llm_client` (`GatewayClient`, `RequestMetadata`, §7.3 error types).
+Env: `LITELLM_BASE_URL`, `LITELLM_VIRTUAL_KEY`. Master key is rejected by default
+(`LLG_DISALLOW_MASTER`, default on). Metadata schema: `config/llm/metadata-contract.schema.json`.
+Reference path: `examples/reference_workflow.py` (alias `llm-general`).
+
+**Langfuse env (proxy):** `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST`,
+optional `LANGFUSE_OTEL_HOST`. Pin uses `success_callback` / `failure_callback`:
+`["langfuse_otel"]`. Telemetry failure must not fail the LLM path.
