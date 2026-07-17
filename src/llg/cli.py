@@ -19,7 +19,11 @@ from llg.validate_config import validate_config
 
 app = typer.Typer(
     name="llg",
-    help="Ops CLI for the LiteLLM + Langfuse gateway (config, secrets, stack, health, keys).",
+    help=(
+        "Canonical ops CLI for the LiteLLM + Langfuse gateway "
+        "(config, secrets, stack, health, keys, smoke, reconcile-cost). "
+        "scripts/* are thin wrappers only."
+    ),
     no_args_is_help=True,
     add_completion=False,
 )
@@ -353,6 +357,131 @@ def keys_list(
             )
         raise typer.Exit(1) from exc
     typer.echo(json.dumps(result, indent=2, default=str))
+
+
+@app.command("smoke")
+def smoke(
+    alias: str = typer.Option(
+        "llm-general",
+        "--alias",
+        help="Gateway model alias to smoke (e.g. llm-general, openai-general).",
+    ),
+    base_url: str = typer.Option(
+        None,
+        "--base-url",
+        help="Proxy base URL (default: LITELLM_BASE_URL or http://localhost:4000/v1).",
+    ),
+    timeout: float = typer.Option(60.0, "--timeout", help="HTTP timeout in seconds."),
+) -> None:
+    """Live provider smoke via GatewayClient. Skips without LLG_LIVE=1.
+
+    Requires LITELLM_VIRTUAL_KEY (not master) and a running stack with provider keys.
+    Live smokes are UNPROVEN in hermetic CI; evidence: docs/evidence/.
+    """
+    if os.environ.get("LLG_LIVE") != "1":
+        typer.secho(
+            "SKIP: live smoke requires LLG_LIVE=1, a running gateway, "
+            "LITELLM_VIRTUAL_KEY, and provider credentials.\n"
+            "Hermetic CI does not run provider smokes. "
+            "See docs/llm-platform/provider-compatibility-matrix.md and docs/evidence/.",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+        raise typer.Exit(0)
+
+    try:
+        from llm_client import GatewayClient, GatewayConfig, RequestMetadata
+    except ImportError as exc:
+        typer.secho(f"llm_client not available: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1) from exc
+
+    import uuid
+
+    try:
+        if base_url:
+            root = base_url.rstrip("/")
+            if not root.endswith("/v1"):
+                root = f"{root}/v1"
+            key = (os.environ.get("LITELLM_VIRTUAL_KEY") or "").strip()
+            if not key:
+                raise RuntimeError("LITELLM_VIRTUAL_KEY is required for smoke")
+            cfg = GatewayConfig(base_url=root, virtual_key=key, timeout=timeout)
+        else:
+            cfg = GatewayConfig.from_env(timeout=timeout)
+    except Exception as exc:
+        typer.secho(f"config error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2) from exc
+
+    meta = RequestMetadata(
+        request_id=str(uuid.uuid4()),
+        service="llg-smoke",
+        feature="smoke",
+        environment="development",
+        release="llg-smoke",
+        model_alias=alias,
+    )
+    try:
+        with GatewayClient(cfg) as client:
+            result = client.chat(
+                model=alias,
+                messages=[{"role": "user", "content": "Reply with the single word: pong"}],
+                metadata=meta,
+                max_tokens=16,
+            )
+    except Exception as exc:
+        typer.secho(f"FAIL smoke alias={alias}: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1) from exc
+
+    content = ""
+    try:
+        content = str(result["choices"][0]["message"]["content"])
+    except (KeyError, IndexError, TypeError):
+        content = str(result)[:200]
+    typer.secho(f"OK smoke alias={alias}", fg=typer.colors.GREEN)
+    typer.echo(f"request_id={meta.request_id}")
+    typer.echo(f"content_preview={content[:120]!r}")
+
+
+@app.command("reconcile-cost")
+def reconcile_cost(
+    run_id: str = typer.Option(
+        None,
+        "--run-id",
+        help="Optional run id for evidence file naming (does not load remote data).",
+    ),
+) -> None:
+    """Explain cost reconciliation; does not invent numbers without live data.
+
+    Full process: docs/llm-platform/cost-reconciliation.md
+    Evidence template: docs/evidence/templates/cost-recon.md
+    """
+    rid = run_id or "(none)"
+    typer.echo("llg reconcile-cost — process stub (WP15)")
+    typer.echo(f"run_id={rid}")
+    typer.echo("")
+    typer.echo(
+        "Cost reconciliation requires provider billing, LiteLLM spend, and Langfuse "
+        "observation costs for a fixed prompt set."
+    )
+    typer.echo("Tolerance proposal: ±5% or ±$0.01 per call group (whichever larger).")
+    typer.echo("")
+    if os.environ.get("LLG_LIVE") != "1":
+        typer.secho(
+            "UNPROVEN: LLG_LIVE is not set. No live spend data was fetched. "
+            "This command does not fabricate reconciliation tables.",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+    else:
+        typer.secho(
+            "LLG_LIVE=1 is set, but automated multi-system fetch is not implemented. "
+            "Capture provider / LiteLLM / Langfuse figures manually and fill "
+            "docs/evidence/templates/cost-recon.md.",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+    typer.echo("See: docs/llm-platform/cost-reconciliation.md")
+    raise typer.Exit(0)
 
 
 @keys_app.command("revoke")

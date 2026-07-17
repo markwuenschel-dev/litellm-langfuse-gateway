@@ -53,3 +53,27 @@ def test_health_help() -> None:
     result = runner.invoke(app, ["health", "--help"])
     assert result.exit_code == 0
     assert "--path" in result.stdout
+
+
+def test_smoke_skips_without_llg_live(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.delenv("LLG_LIVE", raising=False)
+    result = runner.invoke(app, ["smoke", "--alias", "llm-general"])
+    assert result.exit_code == 0
+    combined = result.stdout + result.stderr
+    assert "SKIP" in combined or "LLG_LIVE" in combined
+
+
+def test_reconcile_cost_stub_without_live(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.delenv("LLG_LIVE", raising=False)
+    result = runner.invoke(app, ["reconcile-cost", "--run-id", "unit-test"])
+    assert result.exit_code == 0
+    combined = result.stdout + result.stderr
+    assert "UNPROVEN" in combined or "reconcile" in combined.lower()
+    assert "unit-test" in combined
+
+
+def test_help_lists_smoke_and_reconcile() -> None:
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    assert "smoke" in result.stdout
+    assert "reconcile-cost" in result.stdout

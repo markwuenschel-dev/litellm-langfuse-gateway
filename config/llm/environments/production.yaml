@@ -36,3 +36,13 @@ ops:
   pinned_images_required: true
   salt_offline_backup_required: true
   postgres_backup_required: true
+  # Prefer host/port/password for Redis (not sole redis_url) when multi-replica
+  redis_prefer_host_port_password: true
+  # Scale pods with num_workers=1 (compose/k8s); do not raise workers for concurrency
+  num_workers: 1
+  # LiteLLM DB write batching (when pin supports proxy_batch_write_at): start at 60s
+  # under load; keep lower/default until spend write latency is measured live.
+  proxy_batch_write_at_seconds: 60
+  proxy_batch_write_note: >
+    Guidance only until enabled in litellm-config for a measured production pin.
+    See infra/llm-gateway/upgrade-notes.md and docs/llm-platform/operating-guide.md.

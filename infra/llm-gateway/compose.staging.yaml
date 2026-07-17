@@ -1,0 +1,34 @@
+# Staging overlay for the canonical gateway stack (WP16).
+#
+# Non-secret posture matches config/llm/environments/staging.yaml.
+# Secrets still come from .env / a secret manager — never commit real values.
+#
+# Usage (from repo root):
+#   docker compose \
+#     -f infra/llm-gateway/compose.yaml \
+#     -f infra/llm-gateway/compose.staging.yaml \
+#     up -d
+#
+# Optional Redis (replicas > 1 or shared rpm/tpm):
+#   docker compose \
+#     -f infra/llm-gateway/compose.yaml \
+#     -f infra/llm-gateway/compose.redis.yaml \
+#     -f infra/llm-gateway/compose.staging.yaml \
+#     up -d
+#
+# TLS: terminate at ingress / reverse proxy in front of LITELLM_PORT.
+# Admin UI: do not publish without SSO or network allowlist.
+
+name: litellm-langfuse-gateway-staging
+
+services:
+  litellm:
+    environment:
+      # Production-like LiteLLM mode for pre-prod validation
+      LITELLM_MODE: ${LITELLM_MODE:-PRODUCTION}
+      # Staging projects should use distinct Langfuse keys (set in secret store)
+      # LANGFUSE_* inherited from base compose / .env
+    # Staging smoke identity is virtual-key side (low budget), not compose-level.
+    # Prefer: uv run llg keys create --max-budget 5 --models llm-general --key-alias staging-smoke
+    labels:
+      com.llg.environment: staging

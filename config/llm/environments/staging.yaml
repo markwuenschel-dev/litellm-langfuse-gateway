@@ -29,3 +29,11 @@ langfuse:
 admin_ui:
   public: false
   note: "SSO or network allowlist required; not on the public internet"
+
+# Compose: infra/llm-gateway/compose.staging.yaml (overlay on compose.yaml)
+# Smoke identity: low-budget virtual key, restricted models (see operating-guide.md)
+ops:
+  compose_overlay: infra/llm-gateway/compose.staging.yaml
+  smoke_max_budget_usd: 5
+  smoke_key_alias_prefix: staging-smoke
+  tls: "Terminate at ingress / reverse proxy; local Compose is plain HTTP"

@@ -54,6 +54,8 @@ uv run llg up --redis                # + compose.redis.yaml overlay
 uv run llg health                    # /health/liveliness
 uv run llg health --path /health/readiness   # Postgres-backed readiness
 uv run llg down
+uv run llg smoke --alias llm-general # skips unless LLG_LIVE=1 + virtual key
+uv run llg reconcile-cost            # process stub; no invented numbers
 
 # Virtual keys (admin; requires LITELLM_MASTER_KEY — never for apps)
 uv run llg keys create --models openai-general --max-budget 10 --rpm 60 --key-alias ref-app-dev
@@ -62,7 +64,11 @@ uv run llg keys revoke sk-...                 # POST /key/delete
 uv run llg keys revoke sk-... --mode block    # soft-disable
 ```
 
-`scripts/*` remain thin re-exports for older entrypoints (`llg-validate-config`, etc.).
+**`llg` is the canonical ops surface.** `scripts/*` remain thin re-exports for older entrypoints
+(`llg-validate-config`, `python scripts/healthcheck.py`, etc.). Prefer `uv run llg …`.
+
+Staging overlay (non-secret posture): `compose.staging.yaml` (+ optional Redis).  
+k8s sketch (pinned image, probes, secret refs): `k8s/README.md`.
 
 ### Virtual keys (operating notes)
 

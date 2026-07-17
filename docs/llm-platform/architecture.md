@@ -111,3 +111,26 @@ Reference path: `examples/reference_workflow.py` (alias `llm-general`).
 **Langfuse env (proxy):** `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST`,
 optional `LANGFUSE_OTEL_HOST`. Pin uses `success_callback` / `failure_callback`:
 `["langfuse_otel"]`. Telemetry failure must not fail the LLM path.
+
+## Fallback policy (disabled)
+
+**Router fallbacks are OFF by default.** `infra/llm-gateway/litellm-config.yaml` keeps
+`router_settings.fallbacks` commented out.
+
+**Rationale (semantic risk):** Cross-provider automatic failover can change tool schemas,
+structured-output behavior, and cost attribution mid-workflow. Enabling fallbacks before
+stream/tools/structured compatibility is proven for each hop is disallowed.
+
+See `docs/llm-platform/provider-compatibility-matrix.md` (WP13 matrix; live cells unproven
+without `LLG_LIVE`). Re-enable only via explicit config PR + evidence for a named pair.
+
+## Ops and evidence
+
+| Doc | Role |
+| --- | --- |
+| `operating-guide.md` | Production checklist, smoke identity |
+| `application-migration.md` | Moving apps onto virtual keys |
+| `privacy-and-retention.md` | PII / prompts / retention |
+| `cost-reconciliation.md` | Spend accuracy process |
+| `docs/evidence/` | Evidence index + honest milestone report |
+| `uv run llg` | Canonical ops CLI (`scripts/*` are thin wrappers) |

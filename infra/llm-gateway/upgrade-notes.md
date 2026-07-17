@@ -54,9 +54,37 @@ Set `LITELLM_IMAGE` (or revert the compose default) to the previous `tag@sha256:
 - Floating `main` or unpinned `main-stable` (moving tags)
 - Tag-only refs without `@sha256:…` in `infra/llm-gateway/compose*.yaml`
 
+## Production settings notes (WP17)
+
+Aligned with LiteLLM production guidance for the pin; see also
+`config/llm/environments/production.yaml` and `docs/llm-platform/operating-guide.md`.
+
+| Setting | This repo | Notes |
+| --- | --- | --- |
+| Image digests | Required in compose | Table above |
+| `request_timeout` | `600` in `litellm-config.yaml` | Tune per SLO |
+| `json_logs` / `set_verbose` | `true` / `false` | Non-dev default |
+| `num_workers` | `1` in compose command | Scale out pods/replicas |
+| `LITELLM_MODE` | `PRODUCTION` in staging/prod env contracts | Set in runtime env / staging overlay |
+| `STORE_MODEL_IN_DB` | `False` | YAML SoT |
+| Fallbacks | Disabled | Semantic risk; WP13 matrix |
+| Redis | Overlay when replicas > 1 | Prefer `REDIS_HOST` / `PORT` / `PASSWORD` |
+| `proxy_batch_write_at` | **Guidance: 60** in production env contract | Enable in `litellm_settings` only after measuring spend write load on the pin; not forced in YAML yet to avoid untested behavior |
+| Pool limits | Pin-dependent | Set via LiteLLM DB pool env when scaling write QPS |
+
+When enabling batch write for a pin, add under `litellm_settings` (verify key name against pinned docs):
+
+```yaml
+# litellm_settings:
+#   proxy_batch_write_at: 60
+```
+
+Document the enablement date in this changelog.
+
 ## Changelog
 
 | Date | Note |
 | --- | --- |
+| 2026-07-17 | **WP17:** Production settings notes (`request_timeout`, json logs, batch-write guidance, workers) |
 | 2026-07-17 | **WP3:** Pin LiteLLM `v1.92.0`, Postgres `16-alpine`, Redis `7-alpine` by multi-arch digest; CI pin check; replace default `main-stable` |
 | 2026-07-17 | Layout migration to `infra/llm-gateway/`; YAML SoT; `STORE_MODEL_IN_DB` default false |

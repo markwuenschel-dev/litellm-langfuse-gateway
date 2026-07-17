@@ -56,11 +56,15 @@ model_list:
 
 litellm_settings:
   # Production-lean defaults (dev can override via env / LITELLM_MODE elsewhere)
+  # LITELLM_MODE=PRODUCTION is set in staging/prod env contracts and compose.staging overlay.
   request_timeout: 600
   drop_params: true
   # Prefer structured logs in non-dev; keep verbose off by default
   json_logs: true
   set_verbose: false
+  # proxy_batch_write_at: 60
+  # ^ Optional under write load (spend/logs). Guidance in production.yaml + upgrade-notes.
+  #   Leave commented until measured on this pin; wrong batching is worse than default.
 
   # Request-level telemetry → Langfuse (token, cost, latency) via langfuse_otel.
   # Env: LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST
