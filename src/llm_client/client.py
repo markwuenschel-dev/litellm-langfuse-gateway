@@ -66,9 +66,7 @@ def is_likely_master_key(virtual_key: str, master_key: str | None = None) -> boo
         return True
     # Prefix: same secret value used as a leading substring (min length avoids
     # pathological short master placeholders matching every key).
-    if len(mk) >= 8 and key.startswith(mk):
-        return True
-    return False
+    return bool(len(mk) >= 8 and key.startswith(mk))
 
 
 @dataclass(frozen=True)
