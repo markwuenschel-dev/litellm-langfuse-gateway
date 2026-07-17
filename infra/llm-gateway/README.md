@@ -41,16 +41,43 @@ Production defaults use **tag + multi-arch index digest** (immutable). Do not us
 
 See [docs/llm-platform/architecture.md](../../docs/llm-platform/architecture.md).
 
+## Ops CLI (`llg`)
+
+From **repo root** (preferred):
+
+```bash
+uv run llg --help
+uv run llg secrets generate          # paste into .env (store salt offline)
+uv run llg config validate           # model_list / no literal secrets
+uv run llg up                        # docker compose -f infra/llm-gateway/compose.yaml up -d
+uv run llg up --redis                # + compose.redis.yaml overlay
+uv run llg health                    # /health/liveliness
+uv run llg health --path /health/readiness   # Postgres-backed readiness
+uv run llg down
+```
+
+`scripts/*` remain thin re-exports for older entrypoints (`llg-validate-config`, etc.).
+
+Live integration health tests (skipped unless opted in):
+
+```bash
+# stack must already be up
+$env:LLG_LIVE = "1"   # PowerShell; export LLG_LIVE=1 on bash
+uv run pytest tests/integration/test_gateway_health.py
+```
+
 ## Run
 
 ```bash
 # From this directory
 cp .env.example .env
-# fill secrets (or: uv run python ../../scripts/generate_secrets.py)
-docker compose -f compose.yaml up -d
+# fill secrets (or: uv run llg secrets generate)
+uv run llg up
+# equivalent: docker compose -f compose.yaml up -d
 
 # Optional Redis
-docker compose -f compose.yaml -f compose.redis.yaml up -d
+uv run llg up --redis
+# equivalent: docker compose -f compose.yaml -f compose.redis.yaml up -d
 ```
 
 From **repo root** (same stack via shims):
@@ -71,7 +98,8 @@ docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d
 
 ```bash
 # Config YAML
-uv run python -m scripts.validate_config
+uv run llg config validate
+# legacy: uv run python -m scripts.validate_config
 
 # Compose (dummy required env)
 # PowerShell / bash with env vars set:
@@ -82,5 +110,8 @@ docker compose -f infra/llm-gateway/compose.yaml config
 
 ```bash
 curl -s http://localhost:4000/health/liveliness
-uv run python scripts/healthcheck.py
+curl -s http://localhost:4000/health/readiness
+uv run llg health
+uv run llg health --path /health/readiness
+# legacy: uv run python scripts/healthcheck.py
 ```

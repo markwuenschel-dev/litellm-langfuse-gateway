@@ -1,4 +1,4 @@
-"""Tests for scripts.validate_config."""
+"""Tests for llg.validate_config (and scripts re-export)."""
 
 from __future__ import annotations
 
@@ -6,13 +6,20 @@ from pathlib import Path
 
 import yaml
 
-from scripts.validate_config import REPO_ROOT, validate_config
+from llg.paths import REPO_ROOT
+from llg.validate_config import validate_config
+from scripts.validate_config import validate_config as scripts_validate_config
 
 
 def test_repo_config_is_valid() -> None:
     path = REPO_ROOT / "infra" / "llm-gateway" / "litellm-config.yaml"
     assert path.is_file()
     assert validate_config(path) == []
+
+
+def test_scripts_reexport_same_result() -> None:
+    path = REPO_ROOT / "infra" / "llm-gateway" / "litellm-config.yaml"
+    assert scripts_validate_config(path) == validate_config(path)
 
 
 def test_missing_file() -> None:

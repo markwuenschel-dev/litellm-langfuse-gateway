@@ -70,7 +70,8 @@ docker-compose.yml      # Thin include shim → infra/llm-gateway/compose.yaml
 docker-compose.redis.yml# Thin include shim → infra/llm-gateway/compose.redis.yaml
 docs/llm-platform/      # Architecture, inventory, incident-recovery, platform docs
 examples/               # Minimal client examples (Python + TypeScript)
-scripts/                # Ops helpers (secrets, health, validate_config)
+src/llg/                # Consolidated ops CLI (`uv run llg …`)
+scripts/                # Thin re-exports of llg helpers (backward compatible)
 .github/workflows/      # CI
 ```
 
@@ -78,11 +79,12 @@ scripts/                # Ops helpers (secrets, health, validate_config)
 
 | Goal | Approach |
 | --- | --- |
-| Local stack up | Copy `.env.example` → `.env`, fill keys, `docker compose up -d` (or `docker compose -f infra/llm-gateway/compose.yaml up -d`) |
+| Local stack up | Copy `.env.example` → `.env`, fill keys, `uv run llg up` (or `docker compose -f infra/llm-gateway/compose.yaml up -d`) |
 | Add a model alias | Edit `infra/llm-gateway/litellm-config.yaml` `model_list`; keep provider keys in env |
-| Enable Redis | `docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d` and set Redis env vars |
+| Enable Redis | `uv run llg up --redis` (or compose redis overlay) and set Redis env vars |
 | Wire Langfuse | Set `LANGFUSE_*` in `.env`; ensure `success_callback` / OTEL settings in litellm-config |
-| Health check | `scripts/healthcheck` or `GET /health` / `/health/liveliness` on the proxy |
+| Validate config | `uv run llg config validate` |
+| Health check | `uv run llg health` / `llg health --path /health/readiness` or `GET /health/liveliness` |
 | CI | Push/PR runs lint + config validation workflow |
 
 ## Python / Node tooling
