@@ -12,9 +12,23 @@ Langfuse stays **Cloud** (set `LANGFUSE_*` in `.env`). Redis is optional via `co
 | `compose.redis.yaml` | Optional Redis overlay |
 | `litellm-config.yaml` | **Model registry SoT** (aliases, callbacks, router) |
 | `.env.example` | Env template (copy to `.env`) |
-| `upgrade-notes.md` | Release/pin notes (WP3+) |
+| `upgrade-notes.md` | Image pins, bump/rollback procedure |
 
 Root `docker-compose.yml` / `docker-compose.redis.yml` are thin `include:` shims for DX from the repo root.
+
+## Pinned images (digest-required)
+
+Production defaults use **tag + multi-arch index digest** (immutable). Do not use floating `latest`, `main`, or unpinned `main-stable`.
+
+| Service | Default image |
+| --- | --- |
+| LiteLLM | `ghcr.io/berriai/litellm:v1.92.0@sha256:9ef6f45bc0104940571765e610c52a1d761b5ec85efcd193795281086ee61277` |
+| Postgres | `postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777` |
+| Redis (optional) | `redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99` |
+
+- Override LiteLLM only with a fully pinned ref: `LITELLM_IMAGE=ghcr.io/berriai/litellm:<tag>@sha256:…`
+- How to bump/rollback: [upgrade-notes.md](./upgrade-notes.md)
+- CI fails if compose `image:` lines lack `@sha256:` or use floating tags without digests
 
 ## Model registry authority
 

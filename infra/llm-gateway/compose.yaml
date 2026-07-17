@@ -19,7 +19,9 @@ name: litellm-langfuse-gateway
 
 services:
   postgres:
-    image: postgres:16-alpine
+    # Pin: postgres 16.14-alpine3.24 multi-arch index (2026-07-17)
+    # Bump: see upgrade-notes.md
+    image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-litellm}
@@ -43,9 +45,10 @@ services:
       - gateway
 
   litellm:
-    # Pin to a specific release tag in production (override via LITELLM_IMAGE).
-    # Digest pinning is WP3 — leave tag override for local/dev for now.
-    image: ${LITELLM_IMAGE:-ghcr.io/berriai/litellm:main-stable}
+    # Default: LiteLLM v1.92.0 multi-arch index digest (GHCR, 2026-07-17).
+    # Override with LITELLM_IMAGE only for deliberate bumps/rollbacks (must include @sha256:…).
+    # Bump procedure: infra/llm-gateway/upgrade-notes.md
+    image: ${LITELLM_IMAGE:-ghcr.io/berriai/litellm:v1.92.0@sha256:9ef6f45bc0104940571765e610c52a1d761b5ec85efcd193795281086ee61277}
     restart: unless-stopped
     ports:
       - "${LITELLM_PORT:-4000}:4000"

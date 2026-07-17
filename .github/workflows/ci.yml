@@ -72,6 +72,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Enforce image digest pins
+        run: |
+          set -euo pipefail
+          files=(infra/llm-gateway/compose.yaml infra/llm-gateway/compose.redis.yaml)
+          rc=0
+          for f in "${files[@]}"; do
+            echo "Checking image pins in $f"
+            found=0
+            while IFS= read -r line || [[ -n "$line" ]]; do
+              # strip leading whitespace for comment / key detection
+              trimmed="${line#"${line%%[![:space:]]*}"}"
+              [[ -z "$trimmed" || "$trimmed" == \#* ]] && continue
+              [[ "$trimmed" == image:* ]] || continue
+              found=1
+              if ! grep -qE '@sha256:[0-9a-f]{64}' <<<"$line"; then
+                echo "::error file=$f::image line missing @sha256 digest: $line"
+                rc=1
+              fi
+              # floating tags without digest are forbidden
+              if grep -qE ':(latest|main|main-stable)([[:space:]]|$|")' <<<"$line" \
+                && ! grep -qE '@sha256:[0-9a-f]{64}' <<<"$line"; then
+                echo "::error file=$f::floating tag without digest: $line"
+                rc=1
+              fi
+            done <"$f"
+            if [[ "$found" -eq 0 ]]; then
+              echo "::error file=$f::no image: lines found"
+              rc=1
+            fi
+          done
+          exit "$rc"
+
       - name: Validate canonical gateway compose
         env:
           LITELLM_MASTER_KEY: sk-ci-master-not-real

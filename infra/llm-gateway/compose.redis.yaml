@@ -12,7 +12,9 @@
 
 services:
   redis:
-    image: redis:7-alpine
+    # Pin: redis 7.4.9-alpine multi-arch index (2026-07-17)
+    # Bump: see upgrade-notes.md
+    image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
     restart: unless-stopped
     command:
       [
