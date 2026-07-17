@@ -85,6 +85,7 @@ scripts/                # Thin re-exports of llg helpers (backward compatible)
 | Wire Langfuse | Set `LANGFUSE_*` in `.env`; ensure `success_callback` / OTEL settings in litellm-config |
 | Validate config | `uv run llg config validate` |
 | Health check | `uv run llg health` / `llg health --path /health/readiness` or `GET /health/liveliness` |
+| Virtual keys | `uv run llg keys create --models … --max-budget … --rpm …`; `llg keys list`; `llg keys revoke` (needs `LITELLM_MASTER_KEY`; never print master) |
 | CI | Push/PR runs lint + config validation workflow |
 
 ## Python / Node tooling

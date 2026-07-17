@@ -54,16 +54,36 @@ uv run llg up --redis                # + compose.redis.yaml overlay
 uv run llg health                    # /health/liveliness
 uv run llg health --path /health/readiness   # Postgres-backed readiness
 uv run llg down
+
+# Virtual keys (admin; requires LITELLM_MASTER_KEY — never for apps)
+uv run llg keys create --models openai-general --max-budget 10 --rpm 60 --key-alias ref-app-dev
+uv run llg keys list
+uv run llg keys revoke sk-...                 # POST /key/delete
+uv run llg keys revoke sk-... --mode block    # soft-disable
 ```
 
 `scripts/*` remain thin re-exports for older entrypoints (`llg-validate-config`, etc.).
 
-Live integration health tests (skipped unless opted in):
+### Virtual keys (operating notes)
+
+| Concern | Practice |
+| --- | --- |
+| Auth for admin | `LITELLM_MASTER_KEY` via env (or `--master-key`); **never** printed by `llg` |
+| App traffic | Use the virtual key printed once by `llg keys create` — store in a secret manager |
+| Model ACL | `--models` is a comma-separated allow-list of **gateway aliases** |
+| Budget / RPM | `--max-budget` (USD), `--rpm` → `rpm_limit`, optional `--tpm`, `--budget-duration` |
+| Team | Optional `--team-id` (create teams in Admin UI / API first) |
+| Inventory | `llg keys list` → `GET /key/list` (metadata only). If 404 on your pin, use Admin UI |
+| Revoke | Default `delete`; `--mode block` soft-disables without hard delete |
+| Do not | Commit virtual keys; put master key in app env; log full tokens in CI |
+
+Live integration tests (skipped unless opted in):
 
 ```bash
-# stack must already be up
+# stack must already be up; LITELLM_MASTER_KEY must match the running proxy
 $env:LLG_LIVE = "1"   # PowerShell; export LLG_LIVE=1 on bash
 uv run pytest tests/integration/test_gateway_health.py
+uv run pytest tests/integration/test_virtual_key_access.py
 ```
 
 ## Run

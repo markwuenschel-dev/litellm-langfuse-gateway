@@ -18,6 +18,7 @@ def test_help() -> None:
     assert "health" in result.stdout
     assert "up" in result.stdout
     assert "down" in result.stdout
+    assert "keys" in result.stdout
 
 
 def test_version() -> None:
