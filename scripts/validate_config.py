@@ -10,7 +10,7 @@ from typing import Any
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CONFIG = REPO_ROOT / "config" / "litellm_config.yaml"
+DEFAULT_CONFIG = REPO_ROOT / "infra" / "llm-gateway" / "litellm-config.yaml"
 
 
 def _require_list(data: dict[str, Any], key: str) -> list[Any]:

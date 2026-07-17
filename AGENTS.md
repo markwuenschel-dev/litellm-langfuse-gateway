@@ -26,7 +26,7 @@ Applications and agents
          ▼
     LiteLLM Proxy
       │       │
-      │       ├── PostgreSQL: keys, teams, budgets, spend, model config
+      │       ├── PostgreSQL: keys, teams, budgets, spend
       │       └── Langfuse OTEL callback: per-call telemetry
       │
       ├── OpenAI
@@ -52,23 +52,24 @@ Applications and agents
 
 ## Hard rules
 
-1. **Never commit secrets.** Use `.env` (gitignored) from `.env.example`. Provider keys, `LITELLM_MASTER_KEY`, `LITELLM_SALT_KEY`, DB passwords, and Langfuse keys stay local or in a secret store.
+1. **Never commit secrets.** Use `.env` (gitignored) from `infra/llm-gateway/.env.example` (or root `.env.example`). Provider keys, `LITELLM_MASTER_KEY`, `LITELLM_SALT_KEY`, DB passwords, and Langfuse keys stay local or in a secret store.
 2. **`LITELLM_SALT_KEY` is permanent.** It encrypts data at rest for the proxy. Changing it can brick decryptable secrets. Treat it like a root encryption key; generate once, store offline, never rotate casually.
 3. **Pin LiteLLM image tags.** Prefer a specific release (e.g. `ghcr.io/BerriAI/litellm:main-v1.x.x`) over floating `latest` / unpinned `main` in anything beyond local experimentation.
-4. **PostgreSQL is required for production proxy features** (virtual keys, teams, budgets, spend, UI-backed config). Do not “simplify” production by removing the DB.
+4. **PostgreSQL is required for production proxy features** (virtual keys, teams, budgets, spend). Do not “simplify” production by removing the DB.
 5. **Redis is optional until multi-instance.** Single-replica local/dev can omit Redis. Multi-replica or shared rpm/tpm / routing state requires Redis; prefer `redis_host` / `redis_port` / `redis_password` over a single `redis_url` per LiteLLM production guidance.
 6. **Do not self-host Langfuse by default.** Compose Langfuse only if the user explicitly opts in for residency, regulation, or cost. Cloud is the default observability backend.
-7. **Config is code.** Model aliases, fallbacks, and callback wiring live under `config/`. Prefer reviewable YAML over ad-hoc UI-only state when both are available.
+7. **Config is code; YAML is model-registry SoT.** Model aliases, fallbacks, and callback wiring live in `infra/llm-gateway/litellm-config.yaml`. `STORE_MODEL_IN_DB` defaults false — Admin UI/DB model edits are not production alias authority. Prefer reviewable YAML over ad-hoc UI-only state.
 8. **OpenAI-compatible surface is the contract.** Downstream apps should use standard chat/completions (and related) clients pointed at this proxy. Avoid baking provider-specific SDKs into first-party apps unless necessary.
 
 ## Layout
 
 ```
-config/                 # LiteLLM proxy config (models, callbacks, router)
-docker-compose.yml      # LiteLLM + PostgreSQL (default stack)
-docker-compose.redis.yml# Optional Redis overlay for multi-replica / shared limits
+infra/llm-gateway/      # Canonical Compose + litellm-config.yaml (YAML SoT)
+docker-compose.yml      # Thin include shim → infra/llm-gateway/compose.yaml
+docker-compose.redis.yml# Thin include shim → infra/llm-gateway/compose.redis.yaml
+docs/llm-platform/      # Architecture, inventory, platform docs
 examples/               # Minimal client examples (Python + TypeScript)
-scripts/                # Ops helpers (secrets, health)
+scripts/                # Ops helpers (secrets, health, validate_config)
 .github/workflows/      # CI
 ```
 
@@ -76,10 +77,10 @@ scripts/                # Ops helpers (secrets, health)
 
 | Goal | Approach |
 | --- | --- |
-| Local stack up | Copy `.env.example` → `.env`, fill keys, `docker compose up -d` |
-| Add a model alias | Edit `config/litellm_config.yaml` `model_list`; keep provider keys in env |
+| Local stack up | Copy `.env.example` → `.env`, fill keys, `docker compose up -d` (or `docker compose -f infra/llm-gateway/compose.yaml up -d`) |
+| Add a model alias | Edit `infra/llm-gateway/litellm-config.yaml` `model_list`; keep provider keys in env |
 | Enable Redis | `docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d` and set Redis env vars |
-| Wire Langfuse | Set `LANGFUSE_*` in `.env`; ensure `success_callback` / OTEL settings in config |
+| Wire Langfuse | Set `LANGFUSE_*` in `.env`; ensure `success_callback` / OTEL settings in litellm-config |
 | Health check | `scripts/healthcheck` or `GET /health` / `/health/liveliness` on the proxy |
 | CI | Push/PR runs lint + config validation workflow |
 
@@ -90,7 +91,7 @@ scripts/                # Ops helpers (secrets, health)
 
 ## What not to do
 
-- Do not put provider API keys in `config/*.yaml`; reference `os.environ/...` only.
+- Do not put provider API keys in gateway YAML; reference `os.environ/...` only.
 - Do not document or implement exploit paths against the proxy, master key, or salt key.
 - Do not expand scope into a full agent framework, RAG product, or self-hosted Langfuse HA cluster unless that is an explicit task.
 - Do not claim production readiness without: pinned image, Postgres, master + salt keys, secrets management, and a health/smoke path.

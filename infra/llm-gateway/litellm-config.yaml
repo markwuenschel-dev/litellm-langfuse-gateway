@@ -1,6 +1,11 @@
 # LiteLLM Proxy configuration
 # Docs: https://docs.litellm.ai/docs/proxy/configs
 #
+# Model registry authority (YAML SoT):
+# - This file is the production source of truth for model aliases and routes.
+# - Admin UI / DB model edits are NOT authority for production aliases.
+# - Compose sets STORE_MODEL_IN_DB=False by default to avoid split-brain.
+#
 # Rules:
 # - Never put raw API keys in this file — use os.environ/...
 # - Model "model_name" values are the aliases clients request
@@ -80,8 +85,9 @@ general_settings:
   # master_key: os.environ/LITELLM_MASTER_KEY
   # database_url: os.environ/DATABASE_URL
 
-  # Store model config in DB when using the Admin UI heavily (optional)
-  # store_model_in_db: true
+  # YAML is model-registry authority. Do not enable store_model_in_db for production
+  # aliases without an ADR that flips SoT from this file to the Admin UI/DB.
+  # store_model_in_db: false  # also enforced via STORE_MODEL_IN_DB=False in compose
 
   # Redis for multi-instance rpm/tpm and routing state (prefer host/port/password)
   # redis_host: os.environ/REDIS_HOST

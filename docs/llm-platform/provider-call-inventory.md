@@ -25,9 +25,9 @@ Therefore this inventory is **reference-only**: consumers are this repo’s exam
 
 | Method | What was scanned |
 | --- | --- |
-| Config | `config/litellm_config.yaml` |
-| Env template | `.env.example` |
-| Compose | `docker-compose.yml`, `docker-compose.redis.yml` |
+| Config | `infra/llm-gateway/litellm-config.yaml` |
+| Env template | `infra/llm-gateway/.env.example`, root `.env.example` |
+| Compose | `infra/llm-gateway/compose.yaml`, `compose.redis.yaml` (+ root include shims) |
 | Examples | `examples/python_client.py`, `examples/ts_client.ts` |
 | Docs | `README.md`, `AGENTS.md`, plan §7.1 aliases |
 | Tests | `tests/test_validate_config.py` (fixture models only) |
@@ -38,7 +38,7 @@ No raw provider base URLs (`api.openai.com`, etc.) appear in first-party call si
 
 ---
 
-## Scaffold model list (`config/litellm_config.yaml`)
+## Scaffold model list (`infra/llm-gateway/litellm-config.yaml`)
 
 These are the **current** LiteLLM `model_name` aliases clients may request. Provider routes are env-keyed; no secrets in YAML.
 
@@ -138,9 +138,9 @@ Current scaffold names (`gpt-4o-mini`, `claude-sonnet`, …) are **vendor-ish bo
 
 ## Sources (in-repo)
 
-- `config/litellm_config.yaml` — model_list, callbacks
+- `infra/llm-gateway/litellm-config.yaml` — model_list, callbacks
 - `examples/python_client.py`, `examples/ts_client.ts` — sole runnable client call sites
-- `.env.example`, `docker-compose.yml` — provider env surface
+- `infra/llm-gateway/.env.example`, compose files — provider env surface
 - `README.md` — curl smoke model string
 - `docs/superpowers/plans/2026-07-17-unified-litellm-langfuse-gateway.md` §7.1, WP1, WP6, WP7, WP11, WP13
 - `AGENTS.md` — architecture ownership

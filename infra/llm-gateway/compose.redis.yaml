@@ -1,0 +1,54 @@
+# Optional Redis overlay for multi-replica LiteLLM or distributed rate limits / routing.
+#
+# From this directory:
+#   docker compose -f compose.yaml -f compose.redis.yaml up -d
+#
+# From repo root (thin shims):
+#   docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d
+#
+# Also uncomment Redis-related blocks in litellm-config.yaml and set
+# REDIS_HOST / REDIS_PORT / REDIS_PASSWORD in .env.
+# Prefer host/port/password over a single redis_url (LiteLLM production guidance).
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      [
+        "redis-server",
+        "--requirepass",
+        "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env when enabling Redis}",
+        "--appendonly",
+        "yes",
+      ]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "-a",
+          "${REDIS_PASSWORD}",
+          "ping",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - gateway
+
+  litellm:
+    environment:
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env when enabling Redis}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis_data:

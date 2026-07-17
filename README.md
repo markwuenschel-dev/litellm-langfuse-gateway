@@ -13,7 +13,7 @@ Applications and agents
          ▼
     LiteLLM Proxy
       │       │
-      │       ├── PostgreSQL: keys, teams, budgets, spend, model configuration
+      │       ├── PostgreSQL: keys, teams, budgets, spend
       │       └── Langfuse OTEL callback: per-call telemetry
       │
       ├── OpenAI
@@ -66,6 +66,7 @@ LiteLLM production guidance: pin releases; treat **`LITELLM_SALT_KEY` as a perma
 
 ```bash
 cp .env.example .env
+# canonical template also at: infra/llm-gateway/.env.example
 ```
 
 Edit `.env`:
@@ -85,8 +86,11 @@ Or use `python scripts/generate_secrets.py`.
 
 ### 2. Start the stack
 
+Canonical Compose lives under `infra/llm-gateway/`. Root `docker-compose.yml` is a thin include shim:
+
 ```bash
 docker compose up -d
+# equivalent: docker compose -f infra/llm-gateway/compose.yaml up -d
 ```
 
 Services:
@@ -94,7 +98,7 @@ Services:
 | Service | Default | Role |
 | --- | --- | --- |
 | `litellm` | `http://localhost:4000` | OpenAI-compatible proxy + admin UI |
-| `postgres` | `localhost:5432` | Keys, teams, budgets, spend, config |
+| `postgres` | `localhost:5432` | Keys, teams, budgets, spend |
 
 Optional Redis (multi-replica / shared limits):
 
@@ -150,10 +154,13 @@ See `examples/` for runnable snippets.
 
 | Path | Purpose |
 | --- | --- |
-| `config/litellm_config.yaml` | Models, aliases, callbacks, router settings |
+| `infra/llm-gateway/litellm-config.yaml` | **Model registry SoT** — aliases, callbacks, router |
+| `infra/llm-gateway/compose.yaml` | Canonical LiteLLM + Postgres stack |
+| `infra/llm-gateway/compose.redis.yaml` | Optional Redis overlay |
 | `.env` | Secrets and runtime env (not committed) |
-| `docker-compose.yml` | LiteLLM + Postgres |
-| `docker-compose.redis.yml` | Optional Redis overlay |
+| `docker-compose.yml` | Thin root shim → infra compose |
+
+**YAML is the source of truth** for production model aliases. Compose defaults `STORE_MODEL_IN_DB=False`; Admin UI/DB model edits are not production alias authority. See [docs/llm-platform/architecture.md](docs/llm-platform/architecture.md).
 
 Model list entries reference provider keys via environment variables — never put raw API keys in YAML.
 
@@ -164,16 +171,17 @@ Langfuse wiring uses LiteLLM’s success/failure callbacks and OTEL settings so 
 ```
 .
 ├── AGENTS.md                 # Instructions for coding agents
-├── config/
-│   └── litellm_config.yaml   # Proxy configuration
-├── docker-compose.yml
-├── docker-compose.redis.yml
+├── infra/llm-gateway/        # Canonical gateway stack + litellm-config.yaml
+├── docker-compose.yml        # Thin include shim
+├── docker-compose.redis.yml  # Thin include shim
+├── docs/llm-platform/        # Architecture, inventory
 ├── examples/
 │   ├── python_client.py
 │   └── ts_client.ts
 ├── scripts/
 │   ├── generate_secrets.py
-│   └── healthcheck.py
+│   ├── healthcheck.py
+│   └── validate_config.py
 ├── .github/workflows/ci.yml
 ├── pyproject.toml            # Python tooling
 └── package.json              # JS/TS examples & scripts

@@ -10,7 +10,7 @@ from scripts.validate_config import REPO_ROOT, validate_config
 
 
 def test_repo_config_is_valid() -> None:
-    path = REPO_ROOT / "config" / "litellm_config.yaml"
+    path = REPO_ROOT / "infra" / "llm-gateway" / "litellm-config.yaml"
     assert path.is_file()
     assert validate_config(path) == []
 

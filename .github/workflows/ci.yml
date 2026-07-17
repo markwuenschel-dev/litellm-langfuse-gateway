@@ -72,14 +72,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate default compose file
+      - name: Validate canonical gateway compose
         env:
           LITELLM_MASTER_KEY: sk-ci-master-not-real
           LITELLM_SALT_KEY: sk-ci-salt-not-real
           POSTGRES_PASSWORD: ci-postgres-password
-        run: docker compose -f docker-compose.yml config --quiet
+        run: docker compose -f infra/llm-gateway/compose.yaml config --quiet
 
-      - name: Validate compose with Redis overlay
+      - name: Validate canonical compose with Redis overlay
         env:
           LITELLM_MASTER_KEY: sk-ci-master-not-real
           LITELLM_SALT_KEY: sk-ci-salt-not-real
@@ -87,6 +87,16 @@ jobs:
           REDIS_PASSWORD: ci-redis-password
         run: >
           docker compose
-          -f docker-compose.yml
-          -f docker-compose.redis.yml
+          -f infra/llm-gateway/compose.yaml
+          -f infra/llm-gateway/compose.redis.yaml
           config --quiet
+
+      - name: Validate root compose shims
+        env:
+          LITELLM_MASTER_KEY: sk-ci-master-not-real
+          LITELLM_SALT_KEY: sk-ci-salt-not-real
+          POSTGRES_PASSWORD: ci-postgres-password
+          REDIS_PASSWORD: ci-redis-password
+        run: |
+          docker compose -f docker-compose.yml config --quiet
+          docker compose -f docker-compose.yml -f docker-compose.redis.yml config --quiet
