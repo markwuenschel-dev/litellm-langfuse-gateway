@@ -60,12 +60,33 @@ infra/llm-gateway/
   compose.yaml           # LiteLLM + Postgres (canonical)
   compose.redis.yaml     # Optional Redis overlay
   litellm-config.yaml    # Model registry + callbacks (YAML SoT)
-  .env.example
+  .env.example           # Canonical secret/env template (no real secrets)
   README.md
   upgrade-notes.md       # Pin / upgrade log (WP3+)
+
+config/llm/environments/
+  development.yaml       # Non-secret env contract (timeouts, log level, redis_required)
+  staging.yaml
+  production.yaml
+
+docs/llm-platform/
+  incident-recovery.md   # Salt/master recovery; never regenerate salt against live encrypted DB
 ```
 
 Root `docker-compose.yml` / `docker-compose.redis.yml` are thin `include:` shims for root-level DX.
+Root `.env.example` is a DX copy that points at `infra/llm-gateway/.env.example`.
+
+### Secret hierarchy (summary)
+
+| Class | Examples | Policy |
+| --- | --- | --- |
+| Encryption root | `LITELLM_SALT_KEY` | **Permanent** per environment; offline escrow; restore only |
+| Admin bootstrap | `LITELLM_MASTER_KEY` | Admin only; rotatable; never ship to apps |
+| Provider credentials | `OPENAI_API_KEY`, … | Proxy env / secret manager only |
+| Observability | `LANGFUSE_PUBLIC_KEY`, `SECRET_KEY`, `HOST`, `OTEL_HOST` | Cloud defaults; rotatable |
+| App traffic | Virtual keys | Per app/env; not the master key |
+
+Values never go in git or model YAML. See `infra/llm-gateway/.env.example` and `docs/llm-platform/incident-recovery.md`.
 
 ## Deployment defaults
 

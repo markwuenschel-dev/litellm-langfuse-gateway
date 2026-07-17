@@ -64,10 +64,11 @@ Applications and agents
 ## Layout
 
 ```
-infra/llm-gateway/      # Canonical Compose + litellm-config.yaml (YAML SoT)
+infra/llm-gateway/      # Canonical Compose + litellm-config.yaml (YAML SoT) + .env.example
+config/llm/environments/# Non-secret per-env params (dev/staging/prod)
 docker-compose.yml      # Thin include shim → infra/llm-gateway/compose.yaml
 docker-compose.redis.yml# Thin include shim → infra/llm-gateway/compose.redis.yaml
-docs/llm-platform/      # Architecture, inventory, platform docs
+docs/llm-platform/      # Architecture, inventory, incident-recovery, platform docs
 examples/               # Minimal client examples (Python + TypeScript)
 scripts/                # Ops helpers (secrets, health, validate_config)
 .github/workflows/      # CI

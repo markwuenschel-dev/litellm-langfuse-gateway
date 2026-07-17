@@ -1,0 +1,38 @@
+# Non-secret environment contract — production
+# Secrets (keys, passwords, salt) live in a secret manager only — never in git.
+# LITELLM_SALT_KEY: permanent; escrow offline; see incident-recovery.md
+# See: infra/llm-gateway/.env.example, docs/llm-platform/incident-recovery.md
+
+environment: production
+
+# Model registry authority remains YAML (infra/llm-gateway/litellm-config.yaml)
+store_model_in_db: false
+
+litellm_mode: PRODUCTION
+log_level: INFO
+json_logs: true
+set_verbose: false
+
+# Timeouts (seconds) — tune per SLO; default matches LiteLLM prod guidance baseline
+request_timeout: 600
+health_timeout: 10
+
+# Multi-replica / shared rate limits: Redis is mandatory in production layouts
+# that scale beyond one proxy instance
+redis_required: true
+
+postgres_required: true
+
+langfuse:
+  backend: cloud
+  required_for_llm_path: false
+
+admin_ui:
+  public: false
+  note: "Not public without SSO and network control; prefer private admin path"
+
+# Ops expectations (non-secret flags for deploy checklists)
+ops:
+  pinned_images_required: true
+  salt_offline_backup_required: true
+  postgres_backup_required: true

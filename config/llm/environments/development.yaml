@@ -1,0 +1,34 @@
+# Non-secret environment contract — development
+# Secrets (keys, passwords, salt) live in .env / a secret manager only.
+# See: infra/llm-gateway/.env.example, docs/llm-platform/incident-recovery.md
+
+environment: development
+
+# Model registry authority remains YAML (infra/llm-gateway/litellm-config.yaml)
+store_model_in_db: false
+
+# LiteLLM runtime posture (document intent; wire in compose/config as stack hardens)
+litellm_mode: development
+log_level: DEBUG
+json_logs: false
+set_verbose: true
+
+# Timeouts (seconds) — generous for local debugging
+request_timeout: 600
+health_timeout: 10
+
+# Single-replica local Compose: Redis not required
+redis_required: false
+
+# Postgres is still required for virtual keys / teams / budgets / spend
+postgres_required: true
+
+# Observability: Langfuse Cloud preferred; empty keys OK for pure gateway smoke
+langfuse:
+  backend: cloud
+  required_for_llm_path: false
+
+# Admin surface: acceptable on localhost only
+admin_ui:
+  public: false
+  note: "Local only; do not port-publish beyond loopback in shared networks"
