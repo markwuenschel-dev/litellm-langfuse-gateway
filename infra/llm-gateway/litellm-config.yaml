@@ -3,6 +3,7 @@
 #
 # Model registry authority (YAML SoT):
 # - This file is the production source of truth for model aliases and routes.
+# - Semantic alias contract: config/llm/model-aliases.yaml (must stay in sync).
 # - Admin UI / DB model edits are NOT authority for production aliases.
 # - Compose sets STORE_MODEL_IN_DB=False by default to avoid split-brain.
 #
@@ -10,66 +11,62 @@
 # - Never put raw API keys in this file — use os.environ/...
 # - Model "model_name" values are the aliases clients request
 # - litellm_params.model is the provider-specific route
+# - Stable app-facing aliases only (llm-general + four *-general). No llm-fast yet.
+# - Fallbacks OFF by default (see commented router_settings).
 
 model_list:
-  # --- OpenAI ---
-  - model_name: gpt-4o
-    litellm_params:
-      model: openai/gpt-4o
-      api_key: os.environ/OPENAI_API_KEY
-
-  - model_name: gpt-4o-mini
+  # --- Stable app / smoke aliases (WP6 + WP7) ---
+  # Default chat — apps, examples, README smoke, reference workflow
+  - model_name: llm-general
     litellm_params:
       model: openai/gpt-4o-mini
       api_key: os.environ/OPENAI_API_KEY
 
-  # --- Anthropic ---
-  - model_name: claude-sonnet
+  # Explicit OpenAI provider route (smokes / A-B)
+  - model_name: openai-general
     litellm_params:
-      model: anthropic/claude-sonnet-4-20250514
-      api_key: os.environ/ANTHROPIC_API_KEY
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
 
-  - model_name: claude-haiku
+  # Explicit Anthropic provider route (smokes; cheap/fast lean)
+  - model_name: anthropic-general
     litellm_params:
       model: anthropic/claude-haiku-4-5-20251001
       api_key: os.environ/ANTHROPIC_API_KEY
 
-  # --- Google Gemini ---
-  - model_name: gemini-flash
+  # Explicit Gemini provider route (smokes)
+  - model_name: gemini-general
     litellm_params:
       model: gemini/gemini-2.0-flash
       api_key: os.environ/GEMINI_API_KEY
 
-  - model_name: gemini-pro
-    litellm_params:
-      model: gemini/gemini-2.0-pro
-      api_key: os.environ/GEMINI_API_KEY
-
-  # --- xAI / Grok ---
-  - model_name: grok
-    litellm_params:
-      model: xai/grok-3
-      api_key: os.environ/XAI_API_KEY
-
-  - model_name: grok-mini
+  # Explicit xAI / Grok provider route (smokes; cheap/fast lean)
+  - model_name: grok-general
     litellm_params:
       model: xai/grok-3-mini
       api_key: os.environ/XAI_API_KEY
 
-# Optional logical groups for fallbacks (enable when you have multiple providers live)
+# Fallbacks OFF by default. Enable only after stream/tools/structured compatibility
+# is proven (plan WP13) and each hop is an explicit alias with a consumer.
 # router_settings:
-#   fallbacks:
-#     - gpt-4o: [claude-sonnet, gemini-pro]
-#     - claude-sonnet: [gpt-4o, gemini-pro]
+#   fallbacks: []
+#   # Example (do not enable without evidence):
+#   # fallbacks:
+#   #   - llm-general: [openai-general, anthropic-general]
 
 litellm_settings:
+  # Production-lean defaults (dev can override via env / LITELLM_MODE elsewhere)
+  request_timeout: 600
+  drop_params: true
+  # Prefer structured logs in non-dev; keep verbose off by default
+  json_logs: true
+  set_verbose: false
+
   # Request-level telemetry → Langfuse (token, cost, latency)
   # Also set LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST in the environment.
+  # Pin-era form: success/failure callbacks (also acceptable: callbacks: ["langfuse_otel"]).
   success_callback: ["langfuse_otel"]
   failure_callback: ["langfuse_otel"]
-
-  # Drop unsupported params rather than failing hard across providers
-  drop_params: true
 
   # Uncomment when Redis is available (multi-replica / shared cache)
   # cache: true

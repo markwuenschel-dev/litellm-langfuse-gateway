@@ -117,7 +117,7 @@ curl -s http://localhost:4000/v1/chat/completions \
   -H "Authorization: Bearer $LITELLM_MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-4o-mini",
+    "model": "llm-general",
     "messages": [{"role": "user", "content": "Say hello in one word."}]
   }'
 ```

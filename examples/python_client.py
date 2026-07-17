@@ -29,7 +29,7 @@ def main() -> int:
         return 1
 
     base_url = os.environ.get("LITELLM_BASE_URL", "http://localhost:4000/v1")
-    model = os.environ.get("LITELLM_MODEL", "gpt-4o-mini")
+    model = os.environ.get("LITELLM_MODEL", "llm-general")
 
     client = OpenAI(api_key=api_key, base_url=base_url)
     response = client.chat.completions.create(

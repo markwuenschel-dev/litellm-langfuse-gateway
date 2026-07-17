@@ -21,7 +21,7 @@ async function main(): Promise<void> {
   }
 
   const baseURL = process.env.LITELLM_BASE_URL ?? "http://localhost:4000/v1";
-  const model = process.env.LITELLM_MODEL ?? "gpt-4o-mini";
+  const model = process.env.LITELLM_MODEL ?? "llm-general";
 
   const client = new OpenAI({ apiKey, baseURL });
   const response = await client.chat.completions.create({
