@@ -181,25 +181,22 @@ Langfuse wiring uses LiteLLM’s success/failure callbacks and OTEL settings so 
 
 ## Development tooling
 
-**Python:**
+**Python** ([uv](https://docs.astral.sh/uv/)):
 
 ```bash
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-# Unix:    source .venv/bin/activate
-pip install -e ".[dev]"
-ruff check .
-pytest
+uv sync --all-extras
+uv run ruff check .
+uv run pytest
 ```
 
-**Node (examples):**
+**Node / TypeScript** ([pnpm](https://pnpm.io/)):
 
 ```bash
-npm install
-npm run typecheck
+pnpm install
+pnpm typecheck
 ```
 
-**CI** (GitHub Actions) runs lint, Python tests, and Compose config validation on push/PR to `main`.
+**CI** (GitHub Actions) uses `uv` + `pnpm` lockfiles for lint, Python tests, typecheck, and Compose config validation on push/PR to `main`.
 
 ## Production checklist
 

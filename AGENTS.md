@@ -85,8 +85,8 @@ scripts/                # Ops helpers (secrets, health)
 
 ## Python / Node tooling
 
-- **Python** (`pyproject.toml`): config validation helpers, scripts, optional thin client utilities. Use a venv; `ruff` + `pytest` are the default quality gates.
-- **Node** (`package.json`): lightweight TS examples and script runners. Not a full application monorepo — keep it thin.
+- **Python** (`pyproject.toml` + `uv.lock`): config validation helpers, scripts, optional thin client utilities. Use **`uv`** (`uv sync --all-extras`); `uv run ruff` + `uv run pytest` are the default quality gates.
+- **Node** (`package.json` + `pnpm-lock.yaml`): lightweight TS examples and script runners. Use **`pnpm`** (`pnpm install`, `pnpm typecheck`). Not a full application monorepo — keep it thin.
 
 ## What not to do
 

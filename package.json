@@ -11,8 +11,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "example:ts": "tsx examples/ts_client.ts",
-    "lint": "echo \"No JS linter configured yet; run npm run typecheck\""
+    "lint": "echo \"No JS linter configured yet; run pnpm typecheck\""
   },
+  "packageManager": "pnpm@9.15.0",
   "dependencies": {
     "openai": "^4.77.0"
   },

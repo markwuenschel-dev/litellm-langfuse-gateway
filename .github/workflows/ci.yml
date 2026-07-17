@@ -18,26 +18,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.12"
-          cache: pip
+          enable-cache: true
 
-      - name: Install package (dev)
-        run: pip install -e ".[dev]"
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Sync dependencies (all extras, locked)
+        run: uv sync --all-extras --frozen
 
       - name: Ruff check
-        run: ruff check .
+        run: uv run ruff check .
 
       - name: Ruff format (check)
-        run: ruff format --check .
+        run: uv run ruff format --check .
 
       - name: Validate LiteLLM config
-        run: python -m scripts.validate_config
+        run: uv run python -m scripts.validate_config
 
       - name: Pytest
-        run: pytest
+        run: uv run pytest
 
   node:
     name: TypeScript typecheck
@@ -46,17 +48,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
+          cache: pnpm
 
       - name: Install
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: npm run typecheck
+        run: pnpm typecheck
 
   compose:
     name: Docker Compose config
