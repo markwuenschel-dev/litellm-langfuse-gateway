@@ -101,3 +101,8 @@ logs/
 tmp/
 temp/
 .out/
+
+# Agent worktrees
+.worktrees/
+.superpowers/
+
