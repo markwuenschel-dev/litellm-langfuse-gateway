@@ -1,0 +1,93 @@
+# Default stack: LiteLLM Proxy + PostgreSQL
+# Langfuse: use Cloud (set LANGFUSE_* in .env) — not self-hosted here.
+#
+# Usage:
+#   cp .env.example .env   # then fill secrets
+#   docker compose up -d
+#
+# With Redis (multi-replica / distributed limits):
+#   docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d
+
+name: litellm-langfuse-gateway
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-litellm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-litellm}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-litellm} -d ${POSTGRES_DB:-litellm}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - gateway
+
+  litellm:
+    # Pin to a specific release tag in production (override via LITELLM_IMAGE).
+    image: ${LITELLM_IMAGE:-ghcr.io/berriai/litellm:main-stable}
+    restart: unless-stopped
+    ports:
+      - "${LITELLM_PORT:-4000}:4000"
+    volumes:
+      - ./config/litellm_config.yaml:/app/config.yaml:ro
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?Set LITELLM_MASTER_KEY in .env}
+      LITELLM_SALT_KEY: ${LITELLM_SALT_KEY:?Set LITELLM_SALT_KEY in .env}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-litellm}
+      STORE_MODEL_IN_DB: ${STORE_MODEL_IN_DB:-True}
+
+      # Provider keys (pass-through; only those set in .env are used)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      AZURE_API_KEY: ${AZURE_API_KEY:-}
+      AZURE_API_BASE: ${AZURE_API_BASE:-}
+      COHERE_API_KEY: ${COHERE_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+
+      # Langfuse Cloud
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
+      LANGFUSE_OTEL_HOST: ${LANGFUSE_OTEL_HOST:-}
+
+      # Optional UI
+      UI_USERNAME: ${UI_USERNAME:-}
+      UI_PASSWORD: ${UI_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness')\" || exit 1",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 40s
+    networks:
+      - gateway
+
+volumes:
+  postgres_data:
+
+networks:
+  gateway:
+    driver: bridge

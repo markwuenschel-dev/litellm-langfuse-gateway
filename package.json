@@ -1,0 +1,24 @@
+{
+  "name": "litellm-langfuse-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted LiteLLM proxy + PostgreSQL gateway with Langfuse Cloud observability",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "example:ts": "tsx examples/ts_client.ts",
+    "lint": "echo \"No JS linter configured yet; run npm run typecheck\""
+  },
+  "dependencies": {
+    "openai": "^4.77.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

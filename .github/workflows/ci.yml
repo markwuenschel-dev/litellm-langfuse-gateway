@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python lint & test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package (dev)
+        run: pip install -e ".[dev]"
+
+      - name: Ruff check
+        run: ruff check .
+
+      - name: Ruff format (check)
+        run: ruff format --check .
+
+      - name: Validate LiteLLM config
+        run: python -m scripts.validate_config
+
+      - name: Pytest
+        run: pytest
+
+  node:
+    name: TypeScript typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+  compose:
+    name: Docker Compose config
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate default compose file
+        env:
+          LITELLM_MASTER_KEY: sk-ci-master-not-real
+          LITELLM_SALT_KEY: sk-ci-salt-not-real
+          POSTGRES_PASSWORD: ci-postgres-password
+        run: docker compose -f docker-compose.yml config --quiet
+
+      - name: Validate compose with Redis overlay
+        env:
+          LITELLM_MASTER_KEY: sk-ci-master-not-real
+          LITELLM_SALT_KEY: sk-ci-salt-not-real
+          POSTGRES_PASSWORD: ci-postgres-password
+          REDIS_PASSWORD: ci-redis-password
+        run: >
+          docker compose
+          -f docker-compose.yml
+          -f docker-compose.redis.yml
+          config --quiet
