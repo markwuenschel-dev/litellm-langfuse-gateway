@@ -1,9 +1,16 @@
 """Langfuse OTEL export checks.
 
-Hermetic: asserts gateway config wires langfuse_otel callbacks.
+Hermetic: asserts gateway config wires langfuse_otel callbacks and env docs.
+Unit coverage for "client does not require LANGFUSE_*" lives in
+``tests/unit/test_llm_client.py`` (GatewayClient succeeds with those env vars unset).
+
 Live (LLG_LIVE=1): optional chat that should succeed even if Langfuse is misconfigured
 (export must not break the LLM path). Full generation visibility still needs a real
 Langfuse project and manual dashboard check — not asserted here.
+
+Real outage / export-failure simulation is **manual** (e.g. wrong LANGFUSE_* on the
+proxy, network drop to OTEL host). Automated live tests only check that chat returns
+choices when the stack is up; they do not inject a Langfuse outage.
 """
 
 from __future__ import annotations
@@ -56,6 +63,10 @@ def test_live_chat_does_not_require_langfuse_for_success() -> None:
 
     Set LITELLM_VIRTUAL_KEY (and stack up with a provider key for the alias).
     Does not assert Langfuse dashboard visibility.
+
+    **Manual only:** simulating a real Langfuse outage (bad keys on the *proxy*,
+    blocked OTEL host) is out of scope for this gated test — run that by hand
+    and confirm chat still succeeds while export fails separately.
     """
     import uuid
 

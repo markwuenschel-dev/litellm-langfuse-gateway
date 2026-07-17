@@ -92,6 +92,18 @@ def test_rejects_bearer_value() -> None:
         validate_metadata(_valid(user_id="Bearer sk-abc12345"))
 
 
+def test_string_fields_max_length_128() -> None:
+    """Bounded contract: string metadata fields reject values longer than 128."""
+    ok = "x" * 128
+    assert validate_metadata(_valid(service=ok))["service"] == ok
+    with pytest.raises(MetadataValidationError, match="max length 128"):
+        validate_metadata(_valid(service="x" * 129))
+    with pytest.raises(MetadataValidationError, match="max length 128"):
+        validate_metadata(_valid(feature="y" * 129))
+    with pytest.raises(MetadataValidationError, match="max length 128"):
+        validate_metadata(_valid(trace_id="t" * 129))
+
+
 def test_require_trace_id() -> None:
     with pytest.raises(MetadataValidationError, match="trace_id"):
         validate_metadata(_valid(), require_trace_id=True)

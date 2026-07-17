@@ -231,6 +231,44 @@ def test_map_http_error_table() -> None:
 
 
 def test_is_likely_master_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("LITELLM_MASTER_KEY", "sk-m")
-    assert is_likely_master_key("sk-m") is True
+    monkeypatch.setenv("LITELLM_MASTER_KEY", "sk-master-admin")
+    assert is_likely_master_key("sk-master-admin") is True
     assert is_likely_master_key("sk-other") is False
+    # Prefix of configured master (master len >= 8)
+    assert is_likely_master_key("sk-master-admin-extra") is True
+    # Without master in env: cannot detect — documented limitation
+    monkeypatch.delenv("LITELLM_MASTER_KEY", raising=False)
+    assert is_likely_master_key("sk-master-admin") is False
+    assert is_likely_master_key("sk-literally-master-token") is False
+    # Explicit master_key arg still works without env
+    assert is_likely_master_key("sk-master-admin", master_key="sk-master-admin") is True
+
+
+def test_client_does_not_require_langfuse_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Gateway client is independent of LANGFUSE_*; chat must not need those vars."""
+    for name in (
+        "LANGFUSE_PUBLIC_KEY",
+        "LANGFUSE_SECRET_KEY",
+        "LANGFUSE_HOST",
+        "LANGFUSE_OTEL_HOST",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("LITELLM_VIRTUAL_KEY", "sk-virtual-only")
+    monkeypatch.delenv("LITELLM_MASTER_KEY", raising=False)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "id": "chatcmpl-lf",
+                "choices": [{"message": {"role": "assistant", "content": "ok"}}],
+            },
+        )
+
+    cfg = GatewayConfig.from_env()
+    with GatewayClient(cfg, transport=_transport(handler)) as client:
+        result = client.chat(
+            model="llm-general",
+            messages=[{"role": "user", "content": "hi"}],
+        )
+    assert result["choices"]

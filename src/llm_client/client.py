@@ -39,16 +39,46 @@ def disallow_master_key() -> bool:
 
 
 def is_likely_master_key(virtual_key: str, master_key: str | None = None) -> bool:
-    """Heuristic: key equals LITELLM_MASTER_KEY when that env is set."""
+    """Heuristic: reject master-key shaped app credentials when detectable.
+
+    Detection rules (when ``LLG_DISALLOW_MASTER`` is on):
+
+    1. Exact match against ``LITELLM_MASTER_KEY`` (env or explicit ``master_key``).
+    2. Virtual key starts with the configured master value (catches accidental
+       paste of master as a longer token / prefix collision).
+
+    Limitations (documented, not a full crypto/auth audit):
+
+    - If ``LITELLM_MASTER_KEY`` is **unset** in this process, equality/prefix
+      checks are a no-op — apps that never load the master key cannot compare.
+    - Name-only heuristics (e.g. token contains the literal ``"master"``) are
+      **not** applied: LiteLLM virtual keys are opaque and may coincidentally
+      include that substring. Rely on env comparison + not shipping master to apps.
+    - Does not call the proxy to classify keys; server-side auth still decides.
+    """
+    key = virtual_key.strip()
+    if not key:
+        return False
     mk = (master_key if master_key is not None else os.environ.get("LITELLM_MASTER_KEY") or "").strip()
     if not mk:
         return False
-    return virtual_key.strip() == mk
+    if key == mk:
+        return True
+    # Prefix: same secret value used as a leading substring (min length avoids
+    # pathological short master placeholders matching every key).
+    if len(mk) >= 8 and key.startswith(mk):
+        return True
+    return False
 
 
 @dataclass(frozen=True)
 class GatewayConfig:
-    """Client configuration: OpenAI-compatible base URL + virtual key."""
+    """Client configuration: OpenAI-compatible base URL + virtual key.
+
+    Application traffic only. Does not require ``LANGFUSE_*`` (observability is
+    proxy-side). Master-key refusal depends on ``LLG_DISALLOW_MASTER`` (default on)
+    and ``is_likely_master_key`` — see that function for detection limits.
+    """
 
     base_url: str
     virtual_key: str
@@ -64,8 +94,9 @@ class GatewayConfig:
     ) -> GatewayConfig:
         """Load from LITELLM_BASE_URL + LITELLM_VIRTUAL_KEY.
 
-        Does not fall back to LITELLM_MASTER_KEY. Raises GatewayConfigError if
-        virtual key is missing or matches the master key under disallow policy.
+        Does not fall back to LITELLM_MASTER_KEY. Does not require LANGFUSE_*.
+        Raises GatewayConfigError if virtual key is missing or matches the master
+        key under disallow policy (see ``is_likely_master_key`` limitations).
         """
         base = os.environ.get("LITELLM_BASE_URL", "http://localhost:4000/v1").strip()
         if not base:
@@ -112,7 +143,14 @@ class GatewayConfig:
 
 
 class GatewayClient:
-    """Thin httpx client for ``POST /v1/chat/completions`` via LiteLLM."""
+    """Thin httpx client for ``POST /v1/chat/completions`` via LiteLLM.
+
+    Virtual-key only by default (``LLG_DISALLOW_MASTER``). Does not require
+    ``LANGFUSE_*`` — gateway OTEL export is proxy-side; missing Langfuse env
+    must not block chat. Master-key detection is best-effort equality/prefix
+    against ``LITELLM_MASTER_KEY`` when that env is present (see
+    ``is_likely_master_key``).
+    """
 
     def __init__(
         self,
