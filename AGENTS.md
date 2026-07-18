@@ -46,9 +46,9 @@ Applications and agents
 
 **LiteLLM** owns gateway policy. **Langfuse** owns product/quality observability. Application code should:
 
-1. Call models through the LiteLLM OpenAI-compatible base URL (virtual key auth).
+1. Call models through the LiteLLM OpenAI-compatible base URL (virtual key auth only — see `docs/llm-platform/app-wiring.md`).
 2. Instrument app-level traces in Langfuse (retrieval, tools, agents, sessions/users).
-3. Rely on LiteLLM’s `langfuse_otel` callback for request-level token/cost/latency generation data — do not duplicate that in app code unless you have a deliberate dual-write reason.
+3. Rely on LiteLLM’s proxy Langfuse success/failure callback for request-level generation telemetry — do not duplicate that generation in app code unless you have a deliberate dual-write reason.
 
 ## Hard rules
 
@@ -85,6 +85,7 @@ scripts/                # Thin re-exports of llg helpers (backward compatible)
 | Enable Redis | `uv run llg up --redis` (or compose redis overlay) and set Redis env vars |
 | Wire Langfuse | Set `LANGFUSE_*` in `.env` (incl. optional `LANGFUSE_OTEL_HOST`); `langfuse_otel` success/failure callbacks in litellm-config |
 | App client | `src/llm_client` (`GatewayClient` + metadata contract); `examples/reference_workflow.py`; virtual key only (`LLG_DISALLOW_MASTER` default on) |
+| App wiring | `docs/llm-platform/app-wiring.md` + `infra/llm-gateway/.env.app.example` — apps get base URL + virtual key only; no provider/master keys |
 | Metadata contract | `config/llm/metadata-contract.schema.json` + `llm_client.metadata` |
 | Validate config | `uv run llg config validate` |
 | Health check | `uv run llg health` / `llg health --path /health/readiness` or `GET /health/liveliness` |

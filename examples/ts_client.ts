@@ -22,7 +22,15 @@ async function main(): Promise<void> {
   const apiKey = (process.env.LITELLM_VIRTUAL_KEY ?? "").trim();
   if (!apiKey) {
     console.error(
-      "Set LITELLM_VIRTUAL_KEY (virtual key only; master key is admin-only).",
+      "Set LITELLM_VIRTUAL_KEY (virtual key only; master key is admin-only).\n" +
+        "See docs/llm-platform/app-wiring.md and infra/llm-gateway/.env.app.example",
+    );
+    process.exit(1);
+  }
+  if (!apiKey.startsWith("sk-")) {
+    console.error(
+      "LITELLM_VIRTUAL_KEY must start with 'sk-' (placeholder or wrong value).\n" +
+        "Paste the key from `llg keys create`, not the variable name.",
     );
     process.exit(1);
   }

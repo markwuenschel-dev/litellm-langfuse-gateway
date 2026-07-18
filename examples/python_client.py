@@ -33,7 +33,15 @@ def main() -> int:
     if not api_key:
         print(
             "Set LITELLM_VIRTUAL_KEY (virtual key only; master key is admin-only).\n"
-            "  uv run llg keys create --models llm-general --max-budget 5 --rpm 30",
+            "  uv run llg keys create --models llm-general --max-budget 5 --rpm 30\n"
+            "  See docs/llm-platform/app-wiring.md and infra/llm-gateway/.env.app.example",
+            file=sys.stderr,
+        )
+        return 1
+    if not api_key.startswith("sk-"):
+        print(
+            "LITELLM_VIRTUAL_KEY must start with 'sk-' (got a placeholder or wrong value).\n"
+            "Paste the key printed by `llg keys create`, not the variable name.",
             file=sys.stderr,
         )
         return 1

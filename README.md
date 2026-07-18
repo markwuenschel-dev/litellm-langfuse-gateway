@@ -124,31 +124,65 @@ curl -s http://localhost:4000/v1/chat/completions \
 
 Prefer **virtual keys** (scoped, budgeted) for applications. Reserve the master key for administration.
 
-### 4. Point clients at the gateway
+### 4. Wire an app (base URL + virtual key only)
 
-**Python (OpenAI SDK):**
+**Full runbook:** [docs/llm-platform/app-wiring.md](docs/llm-platform/app-wiring.md)  
+**App env template:** [infra/llm-gateway/.env.app.example](infra/llm-gateway/.env.app.example)
+
+Apps need **only**:
+
+```env
+LITELLM_BASE_URL=http://localhost:4000/v1
+LITELLM_VIRTUAL_KEY=sk-...   # from: uv run llg keys create --models llm-general ...
+LITELLM_MODEL=llm-general    # optional
+```
+
+Do **not** put provider API keys or `LITELLM_MASTER_KEY` in the app.
+
+**Python (preferred — metadata + errors):**
+
+```python
+from llm_client import GatewayClient, GatewayConfig, RequestMetadata
+import uuid, os
+
+client = GatewayClient(GatewayConfig.from_env())
+model = os.environ.get("LITELLM_MODEL", "llm-general")
+meta = RequestMetadata(
+    request_id=str(uuid.uuid4()),
+    service="myapp",
+    feature="chat",
+    environment="development",
+    release="dev",
+    model_alias=model,
+)
+with client:
+    result = client.chat(
+        model=model,
+        messages=[{"role": "user", "content": "Hello"}],
+        metadata=meta,
+    )
+```
+
+**Python / TypeScript (OpenAI SDK):**
 
 ```python
 from openai import OpenAI
-
+import os
 client = OpenAI(
-    api_key="sk-...",  # LiteLLM virtual key
-    base_url="http://localhost:4000/v1",
+    api_key=os.environ["LITELLM_VIRTUAL_KEY"],
+    base_url=os.environ.get("LITELLM_BASE_URL", "http://localhost:4000/v1"),
 )
 ```
 
-**TypeScript:**
-
 ```ts
 import OpenAI from "openai";
-
 const client = new OpenAI({
-  apiKey: process.env.LITELLM_VIRTUAL_KEY,
-  baseURL: "http://localhost:4000/v1",
+  apiKey: process.env.LITELLM_VIRTUAL_KEY!,
+  baseURL: process.env.LITELLM_BASE_URL ?? "http://localhost:4000/v1",
 });
 ```
 
-See `examples/` for runnable snippets.
+Runnable samples: `examples/reference_workflow.py`, `examples/python_client.py`, `examples/ts_client.ts`.
 
 ## Configuration
 
@@ -164,7 +198,7 @@ See `examples/` for runnable snippets.
 
 Model list entries reference provider keys via environment variables — never put raw API keys in YAML.
 
-Langfuse wiring uses LiteLLM’s success/failure callbacks and OTEL settings so each proxied call emits generation-level telemetry. Application code should still create Langfuse traces for retrieval, tools, agents, and session/user identity.
+Langfuse: the proxy exports each generation via the classic `langfuse` success/failure callback (see `infra/llm-gateway/litellm-config.yaml`). Application code should still create **app-level** Langfuse root traces for multi-step workflows (retrieval, tools, agents)—without dual-writing the same generation unless deliberate.
 
 ## Repository layout
 

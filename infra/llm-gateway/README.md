@@ -11,7 +11,8 @@ Langfuse stays **Cloud** (set `LANGFUSE_*` in `.env`). Redis is optional via `co
 | `compose.yaml` | LiteLLM + Postgres (canonical) |
 | `compose.redis.yaml` | Optional Redis overlay |
 | `litellm-config.yaml` | **Model registry SoT** (aliases, callbacks, router) |
-| `.env.example` | Env template (copy to `.env`) |
+| `.env.example` | Env template for **proxy** (copy to `.env`) |
+| `.env.app.example` | Env template for **apps** (base URL + virtual key only) |
 | `upgrade-notes.md` | Image pins, bump/rollback procedure |
 
 Root `docker-compose.yml` / `docker-compose.redis.yml` are thin `include:` shims for DX from the repo root.
@@ -178,10 +179,13 @@ uv run pytest tests/integration/test_langfuse_export.py -q
 # Live optional: $env:LLG_LIVE="1"; $env:LITELLM_VIRTUAL_KEY="sk-..."; uv run pytest tests/integration/test_langfuse_export.py
 ```
 
-## Application client
+## Application client (wiring)
+
+**Runbook:** [docs/llm-platform/app-wiring.md](../../docs/llm-platform/app-wiring.md)  
+**App env template:** [`.env.app.example`](./.env.app.example) (not this proxy `.env`)
 
 ```bash
-# Virtual key only (never master key in apps)
+# Virtual key only (never master key in apps) — must start with sk-
 export LITELLM_VIRTUAL_KEY=sk-...
 export LITELLM_BASE_URL=http://localhost:4000/v1
 uv run python examples/reference_workflow.py
