@@ -14,9 +14,7 @@ __all__ = ["compose_down", "compose_up"]
 
 def _docker_compose_cmd() -> list[str]:
     if shutil.which("docker") is None:
-        raise FileNotFoundError(
-            "docker not found on PATH; install Docker to use llg up/down"
-        )
+        raise FileNotFoundError("docker not found on PATH; install Docker to use llg up/down")
     return ["docker", "compose"]
 
 

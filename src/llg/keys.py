@@ -30,8 +30,8 @@ class KeyClientError(Exception):
 
 def default_base_url() -> str:
     """Proxy base URL without trailing slash or /v1 suffix."""
-    return os.environ.get("LITELLM_BASE_URL", "http://localhost:4000").removesuffix("/v1").rstrip(
-        "/"
+    return (
+        os.environ.get("LITELLM_BASE_URL", "http://localhost:4000").removesuffix("/v1").rstrip("/")
     )
 
 

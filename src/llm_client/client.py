@@ -59,7 +59,9 @@ def is_likely_master_key(virtual_key: str, master_key: str | None = None) -> boo
     key = virtual_key.strip()
     if not key:
         return False
-    mk = (master_key if master_key is not None else os.environ.get("LITELLM_MASTER_KEY") or "").strip()
+    mk = (
+        master_key if master_key is not None else os.environ.get("LITELLM_MASTER_KEY") or ""
+    ).strip()
     if not mk:
         return False
     if key == mk:

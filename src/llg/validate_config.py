@@ -95,17 +95,14 @@ def validate_model_aliases(path: Path) -> list[str]:
             errors.append(f"{prefix}: api_key_env is required")
         elif api_key_env.startswith("os.environ/") or "/" in api_key_env:
             errors.append(
-                f"{prefix}: api_key_env must be a bare env var name "
-                f"(got {api_key_env!r})"
+                f"{prefix}: api_key_env must be a bare env var name (got {api_key_env!r})"
             )
         elif api_key_env.lower().startswith("sk-") or " " in api_key_env:
             errors.append(f"{prefix}: api_key_env looks like a literal secret")
 
     missing = STABLE_ALIASES - names
     if missing:
-        errors.append(
-            "missing required stable aliases: " + ", ".join(sorted(missing))
-        )
+        errors.append("missing required stable aliases: " + ", ".join(sorted(missing)))
 
     return errors
 
@@ -179,8 +176,7 @@ def validate_config(
             errors.append(f"{prefix}: api_key must be a string when present")
         elif not api_key.startswith("os.environ/"):
             errors.append(
-                f"{prefix}: api_key must reference os.environ/... "
-                f"(got literal secret shape)"
+                f"{prefix}: api_key must reference os.environ/... (got literal secret shape)"
             )
 
         if model_name is not None and model is not None:
@@ -206,8 +202,7 @@ def validate_config(
             fallbacks = router.get("fallbacks")
             if fallbacks:
                 errors.append(
-                    "router_settings.fallbacks must be empty/absent "
-                    "(fallbacks off by default)"
+                    "router_settings.fallbacks must be empty/absent (fallbacks off by default)"
                 )
 
     # Alias contract sync (repo default config, or explicit aliases_path)

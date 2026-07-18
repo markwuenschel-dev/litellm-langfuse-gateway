@@ -123,18 +123,23 @@ def map_http_error(
         return ModelAccessDenied(msg, status_code=status_code, body=text)
 
     if status_code == 429:
-        if any(
-            token in hay
-            for token in (
-                "provider",
-                "upstream",
-                "openai",
-                "anthropic",
-                "gemini",
-                "xai",
-                "rate_limit_error",
+        if (
+            any(
+                token in hay
+                for token in (
+                    "provider",
+                    "upstream",
+                    "openai",
+                    "anthropic",
+                    "gemini",
+                    "xai",
+                    "rate_limit_error",
+                )
             )
-        ) and "litellm" not in hay and "rpm" not in hay and "tpm" not in hay:
+            and "litellm" not in hay
+            and "rpm" not in hay
+            and "tpm" not in hay
+        ):
             return ProviderUnavailable(msg, status_code=status_code, body=text)
         # Prefer gateway rate-limit for key/rpm/tpm style messages
         if any(token in hay for token in ("rpm", "tpm", "rate limit", "rate_limit", "quota")):

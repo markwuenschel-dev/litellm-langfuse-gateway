@@ -120,9 +120,8 @@ def health(
         )
         raise typer.Exit(2)
 
-    resolved = (
-        base_url
-        or os.environ.get("LITELLM_BASE_URL", "http://localhost:4000").removesuffix("/v1")
+    resolved = base_url or os.environ.get("LITELLM_BASE_URL", "http://localhost:4000").removesuffix(
+        "/v1"
     )
     code, message = check_health(resolved, path=path, timeout=timeout)
     if code == 0:

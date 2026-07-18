@@ -39,7 +39,9 @@ def test_postgres_down_readiness_fails() -> None:
     raise NotImplementedError("chaos harness not in-repo")
 
 
-@pytest.mark.skip(reason="Manual chaos: block Langfuse; chat must still succeed — UNPROVEN automated")
+@pytest.mark.skip(
+    reason="Manual chaos: block Langfuse; chat must still succeed — UNPROVEN automated"
+)
 def test_langfuse_unreachable_llm_path_continues() -> None:
     """Stub: Langfuse OTEL host unreachable; primary chat still 200."""
     raise NotImplementedError("chaos harness not in-repo")

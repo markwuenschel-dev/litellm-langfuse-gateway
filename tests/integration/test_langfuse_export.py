@@ -1,6 +1,7 @@
-"""Langfuse OTEL export checks.
+"""Langfuse export checks.
 
-Hermetic: asserts gateway config wires langfuse_otel callbacks and env docs.
+Hermetic: asserts gateway config wires Langfuse success/failure callbacks and env docs.
+Accepts classic ``langfuse`` and/or ``langfuse_otel`` (classic is the proven Cloud path).
 Unit coverage for "client does not require LANGFUSE_*" lives in
 ``tests/unit/test_llm_client.py`` (GatewayClient succeeds with those env vars unset).
 
@@ -9,8 +10,7 @@ Live (LLG_LIVE=1): optional chat that should succeed even if Langfuse is misconf
 Langfuse project and manual dashboard check — not asserted here.
 
 Real outage / export-failure simulation is **manual** (e.g. wrong LANGFUSE_* on the
-proxy, network drop to OTEL host). Automated live tests only check that chat returns
-choices when the stack is up; they do not inject a Langfuse outage.
+proxy). Automated live tests only check that chat returns choices when the stack is up.
 """
 
 from __future__ import annotations
@@ -24,21 +24,23 @@ from llg.paths import REPO_ROOT
 
 CONFIG_PATH = REPO_ROOT / "infra" / "llm-gateway" / "litellm-config.yaml"
 
+_LANGFUSE_CALLBACKS = frozenset({"langfuse", "langfuse_otel"})
 
-def test_langfuse_otel_callbacks_in_config() -> None:
-    """WP9 hermetic: pin-era success/failure callbacks include langfuse_otel."""
+
+def test_langfuse_callbacks_in_config() -> None:
+    """Hermetic: success/failure (or callbacks list) includes a Langfuse exporter."""
     assert CONFIG_PATH.is_file(), f"missing {CONFIG_PATH}"
     data = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
     settings = data.get("litellm_settings") or {}
     success = settings.get("success_callback") or []
     failure = settings.get("failure_callback") or []
     callbacks = settings.get("callbacks") or []
-    assert "langfuse_otel" in success or "langfuse_otel" in callbacks, (
-        "expected langfuse_otel in success_callback or callbacks"
+    wired = set(success) | set(failure) | set(callbacks)
+    assert wired & _LANGFUSE_CALLBACKS, (
+        f"expected langfuse and/or langfuse_otel in callbacks, got {sorted(wired)}"
     )
-    assert "langfuse_otel" in failure or "langfuse_otel" in callbacks, (
-        "expected langfuse_otel in failure_callback or callbacks"
-    )
+    assert set(success) & _LANGFUSE_CALLBACKS or set(callbacks) & _LANGFUSE_CALLBACKS
+    assert set(failure) & _LANGFUSE_CALLBACKS or set(callbacks) & _LANGFUSE_CALLBACKS
 
 
 def test_langfuse_env_documented_in_example() -> None:

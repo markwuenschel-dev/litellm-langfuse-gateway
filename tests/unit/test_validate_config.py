@@ -201,11 +201,7 @@ def test_alias_contract_missing_alias(tmp_path: Path) -> None:
     aliases_path.write_text(yaml.dump(aliases), encoding="utf-8")
     config_path = tmp_path / "litellm-config.yaml"
     # Drop grok-general from runtime config
-    models = [
-        m
-        for m in _model_list_from_aliases(aliases)
-        if m["model_name"] != "grok-general"
-    ]
+    models = [m for m in _model_list_from_aliases(aliases) if m["model_name"] != "grok-general"]
     config_path.write_text(yaml.dump({"model_list": models}), encoding="utf-8")
     errors = validate_config(config_path, aliases_path=aliases_path)
     assert any("grok-general" in e and "missing" in e for e in errors)
