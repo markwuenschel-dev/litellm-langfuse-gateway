@@ -1,8 +1,16 @@
 # Milestone report — LiteLLM + Langfuse gateway
 
-**Date:** 2026-07-17  
-**Branch worktree:** `feature-llm-gateway`  
-**Honesty rule:** Claims must not exceed what was checked. Live provider smokes, Langfuse correlation, cost recon, Postgres outage, and similar rows are **UNPROVEN** without credentials / `LLG_LIVE`.
+**Date:** 2026-07-18 (updated after merge of #1 + local live smokes)  
+**Branch:** `main`  
+**Honesty rule:** Claims must not exceed what was checked. Cost recon, Postgres chaos, full CI live matrix, and org-wide app migration remain **UNPROVEN** unless noted.
+
+### Operator live notes (this environment)
+
+| Item | Status |
+| --- | --- |
+| Virtual-key smokes (OpenAI / Gemini 3.5 / Grok / Anthropic / llm-general) | **exercised** by operator |
+| Langfuse Cloud generations visible (US project, classic `langfuse` callback) | **exercised** (multiple traces) |
+| App wiring docs | **configured** on main (`app-wiring.md`) |
 
 ## Verification legend
 
@@ -18,16 +26,16 @@
 
 | # | Criterion | Status | Evidence pointer |
 | --- | --- | --- | --- |
-| 1 | All four providers called via LiteLLM with virtual keys | **UNPROVEN** | Needs provider keys + `LLG_LIVE`; matrix: `docs/llm-platform/provider-compatibility-matrix.md` |
-| 2 | Representative app needs no raw provider credential | **hermetic-verified** (client/examples design) | `src/llm_client/`, `examples/reference_workflow.py`; live path UNPROVEN |
+| 1 | All four providers called via LiteLLM with virtual keys | **exercised** (operator live smokes) | Chat smokes; matrix stream/tools still largely unproven |
+| 2 | Representative app needs no raw provider credential | **hermetic-verified** + **exercised** (client/smokes) | `src/llm_client/`, `examples/`, `docs/llm-platform/app-wiring.md` |
 | 3 | Postgres persistence survives gateway restart | **UNPROVEN** | `docs/evidence/failure-matrix.md` live row |
 | 4 | Model restrictions, budgets, rate limits proven | **hermetic-verified** (error mapping + keys CLI); **live UNPROVEN** | `tests/unit/test_llm_client.py`, `llg keys`; live ACL/budget unproven |
-| 5 | Stable aliases documented and tested | **configured** + config validate; live smoke **UNPROVEN** | `model-aliases.yaml`, `litellm-config.yaml`, `llg config validate` |
+| 5 | Stable aliases documented and tested | **configured** + **exercised** (smokes) | `model-aliases.yaml`, `litellm-config.yaml`, live alias smokes |
 | 6 | Provider failures → normalized actionable errors | **hermetic-verified** | `src/llm_client/errors.py`, unit tests |
 | 7 | Safe fallback proven **or** explicitly disabled with rationale | **configured: disabled + rationale** | `litellm-config.yaml` (fallbacks off); `provider-compatibility-matrix.md`, `architecture.md` |
 | 8 | Every provider call in LiteLLM usage records | **UNPROVEN** | Requires live spend after smokes |
-| 9 | Every provider call expected Langfuse telemetry | **configured** (`langfuse_otel`); export **UNPROVEN** | `litellm-config.yaml` callbacks |
-| 10 | Representative E2E correlated application trace | **UNPROVEN** | Langfuse project + `templates/langfuse-correlation.md` |
+| 9 | Every provider call expected Langfuse telemetry | **exercised** (classic `langfuse`; generations in Cloud UI) | `litellm-config.yaml`; operator traces; keep host/region matched |
+| 10 | Representative E2E correlated application trace | **partial** (gateway generations); full app root correlation optional | App wiring docs; dual-instrumentation still optional |
 | 11 | User/session/env/feature/release attribution per contract | **hermetic-verified** (schema + validator); live attach **UNPROVEN** | `metadata-contract.schema.json`, `tests/unit/test_metadata.py` |
 | 12 | Prompt/response recording follows privacy policy | **configured** (policy doc) | `privacy-and-retention.md`; Cloud retention settings UNPROVEN |
 | 13 | Langfuse outage tested, bounded | **UNPROVEN** | failure-matrix live row |

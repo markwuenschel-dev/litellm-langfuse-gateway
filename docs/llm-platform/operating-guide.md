@@ -33,7 +33,8 @@ uv run llg keys list          # needs master; metadata only
 | Cadence | Action |
 | --- | --- |
 | Daily | Readiness health; error rate / 5xx from proxy logs |
-| Weekly | Spend by key/team; budget headroom; Langfuse export lag |
+| Weekly | Spend by key/team; budget headroom; Langfuse traces present for sample traffic |
+| As needed | App wiring checklist: `docs/llm-platform/app-wiring.md` |
 | Per release | Pin bump procedure; smoke matrix (`LLG_LIVE=1`); cost recon if pricing changed |
 | Quarterly | Salt escrow existence check; Postgres restore drill |
 

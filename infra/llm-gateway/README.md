@@ -143,33 +143,40 @@ uv run llg health --path /health/readiness
 # legacy: uv run python scripts/healthcheck.py
 ```
 
-## Langfuse Cloud (OTEL export)
+## Langfuse Cloud (generation export)
 
-LiteLLM exports per-call generation telemetry via the **`langfuse_otel`** callback
-(pin-era form in `litellm-config.yaml`):
+LiteLLM exports per-call generation telemetry via the classic **`langfuse`** callback
+in `litellm-config.yaml`:
 
 ```yaml
 litellm_settings:
-  success_callback: ["langfuse_otel"]
-  failure_callback: ["langfuse_otel"]
+  success_callback: ["langfuse"]
+  failure_callback: ["langfuse"]
 ```
 
-Set these in `.env` (see `.env.example`):
+Set these in `.env` (see `.env.example`). **Host must match the Langfuse project region**
+(US keys against `https://cloud.langfuse.com` return 401 “invalid credentials / host”):
 
 | Variable | Role |
 | --- | --- |
-| `LANGFUSE_PUBLIC_KEY` | Langfuse project public key (`pk-lf-…`) |
-| `LANGFUSE_SECRET_KEY` | Langfuse project secret key (`sk-lf-…`) |
-| `LANGFUSE_HOST` | UI/API host — EU `https://cloud.langfuse.com`, US `https://us.cloud.langfuse.com` |
-| `LANGFUSE_OTEL_HOST` | Optional OTEL ingest override when your plan/region requires a distinct endpoint |
+| `LANGFUSE_PUBLIC_KEY` | Project public key (`pk-lf-…`) |
+| `LANGFUSE_SECRET_KEY` | Project secret key (`sk-lf-…`) |
+| `LANGFUSE_HOST` | US `https://us.cloud.langfuse.com` · EU `https://cloud.langfuse.com` |
+| `LANGFUSE_OTEL_HOST` | Keep on the **same region host** as `LANGFUSE_HOST` if set |
+| `LANGFUSE_BASE_URL` | Optional; same host (do not wrap the value in quotes in `.env`) |
 
-Compose passes these through to the `litellm` service. **Missing or invalid Langfuse
-credentials must not break the LLM path** — fix telemetry separately (proxy logs may
-show export errors; never log secret values).
+Compose passes these through to the `litellm` service. After changing Langfuse env:
 
-Use separate Langfuse projects (keys) for dev vs prod. App workflows should create
-root traces in Langfuse and pass `metadata.trace_id` + `metadata.request_id` on
-gateway calls (see `config/llm/metadata-contract.schema.json` and
+```bash
+docker compose -f compose.yaml up -d --force-recreate litellm
+```
+
+**Missing or invalid Langfuse credentials must not break the LLM path** — fix telemetry
+separately (proxy logs may show export errors; **never print secret key values**).
+
+Use separate Langfuse projects (keys) for dev vs prod. App workflows may create root
+traces and pass `metadata.trace_id` + `metadata.request_id` on gateway calls
+(see `docs/llm-platform/app-wiring.md`, `config/llm/metadata-contract.schema.json`,
 `examples/reference_workflow.py`).
 
 Hermetic config check / live-gated probe:

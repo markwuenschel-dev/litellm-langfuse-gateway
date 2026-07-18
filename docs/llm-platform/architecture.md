@@ -17,7 +17,7 @@ Applications and agents
     LiteLLM Proxy
       │       │
       │       ├── PostgreSQL: keys, teams, budgets, spend
-      │       └── Langfuse OTEL callback: per-call telemetry
+      │       └── Langfuse callback (classic `langfuse`): per-call generations
       │
       ├── OpenAI
       ├── Anthropic
@@ -60,21 +60,23 @@ infra/llm-gateway/
   compose.yaml           # LiteLLM + Postgres (canonical)
   compose.redis.yaml     # Optional Redis overlay
   litellm-config.yaml    # Model registry + callbacks (YAML SoT)
-  .env.example           # Canonical secret/env template (no real secrets)
+  .env.example           # Proxy secret/env template (no real secrets)
+  .env.app.example       # App-only env (base URL + virtual key)
   README.md
-  upgrade-notes.md       # Pin / upgrade log (WP3+)
+  upgrade-notes.md       # Pin / upgrade log
 
-config/llm/environments/
-  development.yaml       # Non-secret env contract (timeouts, log level, redis_required)
-  staging.yaml
-  production.yaml
+config/llm/
+  model-aliases.yaml
+  metadata-contract.schema.json
+  environments/          # Non-secret env contracts
 
 docs/llm-platform/
-  incident-recovery.md   # Salt/master recovery; never regenerate salt against live encrypted DB
+  app-wiring.md          # Wire product apps to the gateway
+  incident-recovery.md   # Salt/master recovery
 ```
 
-Root `docker-compose.yml` / `docker-compose.redis.yml` are thin `include:` shims for root-level DX.
-Root `.env.example` is a DX copy that points at `infra/llm-gateway/.env.example`.
+Root `docker-compose.yml` / `docker-compose.redis.yml` are thin `include:` shims.
+Root `.env.example` is a DX copy of the proxy template.
 
 ### Secret hierarchy (summary)
 
@@ -101,16 +103,20 @@ Values never go in git or model YAML. See `infra/llm-gateway/.env.example` and `
 
 1. Call models through the LiteLLM OpenAI-compatible base URL (virtual key auth).
 2. Instrument app-level traces in Langfuse (retrieval, tools, agents, sessions/users).
-3. Rely on LiteLLM’s `langfuse_otel` callback for request-level token/cost/latency generation data.
+3. Rely on LiteLLM’s classic `langfuse` success/failure callback for request-level generation telemetry.
 
 **In-repo client:** `src/llm_client` (`GatewayClient`, `RequestMetadata`, §7.3 error types).
 Env: `LITELLM_BASE_URL`, `LITELLM_VIRTUAL_KEY`. Master key is rejected by default
 (`LLG_DISALLOW_MASTER`, default on). Metadata schema: `config/llm/metadata-contract.schema.json`.
 Reference path: `examples/reference_workflow.py` (alias `llm-general`).
 
-**Langfuse env (proxy):** `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST`,
-optional `LANGFUSE_OTEL_HOST`. Pin uses `success_callback` / `failure_callback`:
-`["langfuse_otel"]`. Telemetry failure must not fail the LLM path.
+**Langfuse env (proxy):** `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST`
+(must match project region). Optional `LANGFUSE_OTEL_HOST` if using OTEL export paths —
+keep it on the **same region host** as `LANGFUSE_HOST`. Pin uses classic callbacks:
+`success_callback` / `failure_callback`: `["langfuse"]`. Telemetry failure must not fail
+the LLM path.
+
+**App wiring:** `docs/llm-platform/app-wiring.md`, `infra/llm-gateway/.env.app.example`.
 
 ## Fallback policy (disabled)
 
@@ -128,8 +134,10 @@ without `LLG_LIVE`). Re-enable only via explicit config PR + evidence for a name
 
 | Doc | Role |
 | --- | --- |
+| `app-wiring.md` | Wire product apps (env, keys, Python/TS, verification) |
 | `operating-guide.md` | Production checklist, smoke identity |
-| `application-migration.md` | Moving apps onto virtual keys |
+| `application-migration.md` | Migrating apps off direct provider keys |
+| `incident-recovery.md` | Salt / master recovery |
 | `privacy-and-retention.md` | PII / prompts / retention |
 | `cost-reconciliation.md` | Spend accuracy process |
 | `docs/evidence/` | Evidence index + honest milestone report |

@@ -11,104 +11,99 @@ A **control-plane + observability** stack for LLM traffic:
 | Gateway control plane | **LiteLLM Proxy** | Provider credentials, model aliases, virtual keys, permissions, budgets, routing, rate limits, retries, fallbacks, normalized errors, consolidated spend |
 | Observability / quality plane | **Langfuse** | Traces, nested spans, sessions, users, prompt versions, costs, latency, feedback, scores, datasets, evaluations |
 
-Initial deployment target:
+Deployment target:
 
-- **Self-hosted** LiteLLM + PostgreSQL
-- **Langfuse Cloud** (not self-hosted unless residency/regulatory/cost force it)
-- **Redis** only when running multiple LiteLLM replicas or needing distributed rate-limiting / routing state
+- **Self-hosted** LiteLLM + PostgreSQL  
+- **Langfuse Cloud** (not self-hosted unless residency/regulatory/cost force it)  
+- **Redis** only when multi-replica or shared rate-limit / routing state  
 
 ## Architecture (do not invert ownership)
 
 ```
 Applications and agents
-         │
-         │ OpenAI-compatible requests
+         │ OpenAI-compatible + virtual key
          ▼
     LiteLLM Proxy
       │       │
       │       ├── PostgreSQL: keys, teams, budgets, spend
-      │       └── Langfuse OTEL callback: per-call telemetry
+      │       └── Langfuse callback (classic `langfuse`): generations
       │
-      ├── OpenAI
-      ├── Anthropic
-      ├── Google Gemini
-      └── xAI/Grok
+      ├── OpenAI / Anthropic / Gemini / xAI
 
-Applications and agents
-         │
-         └── Langfuse application tracing
-               ├── request trace
-               ├── retrieval/tool spans
-               ├── LiteLLM generations
-               ├── user and session identity
-               └── scores/evaluations
+Applications
+         └── Langfuse app tracing (root, tools, retrieval, scores)
 ```
 
-**LiteLLM** owns gateway policy. **Langfuse** owns product/quality observability. Application code should:
+**LiteLLM** owns gateway policy. **Langfuse** owns product/quality observability.
 
-1. Call models through the LiteLLM OpenAI-compatible base URL (virtual key auth only — see `docs/llm-platform/app-wiring.md`).
-2. Instrument app-level traces in Langfuse (retrieval, tools, agents, sessions/users).
-3. Rely on LiteLLM’s proxy Langfuse success/failure callback for request-level generation telemetry — do not duplicate that generation in app code unless you have a deliberate dual-write reason.
+Application code should:
+
+1. Call models through the LiteLLM OpenAI-compatible base URL with a **virtual key only** — see `docs/llm-platform/app-wiring.md`.
+2. Instrument app-level traces for multi-step workflows (retrieval, tools, agents, sessions/users).
+3. Rely on the proxy Langfuse success/failure callback for **generation** telemetry — do not dual-write the same generation unless deliberate.
 
 ## Hard rules
 
-1. **Never commit secrets.** Use `.env` (gitignored) from `infra/llm-gateway/.env.example` (or root `.env.example`). Provider keys, `LITELLM_MASTER_KEY`, `LITELLM_SALT_KEY`, DB passwords, and Langfuse keys stay local or in a secret store.
-2. **`LITELLM_SALT_KEY` is permanent.** It encrypts data at rest for the proxy. Changing it can brick decryptable secrets. Treat it like a root encryption key; generate once, store offline, never rotate casually.
-3. **Pin LiteLLM image tags.** Prefer a specific release (e.g. `ghcr.io/BerriAI/litellm:main-v1.x.x`) over floating `latest` / unpinned `main` in anything beyond local experimentation.
-4. **PostgreSQL is required for production proxy features** (virtual keys, teams, budgets, spend). Do not “simplify” production by removing the DB.
-5. **Redis is optional until multi-instance.** Single-replica local/dev can omit Redis. Multi-replica or shared rpm/tpm / routing state requires Redis; prefer `redis_host` / `redis_port` / `redis_password` over a single `redis_url` per LiteLLM production guidance.
-6. **Do not self-host Langfuse by default.** Compose Langfuse only if the user explicitly opts in for residency, regulation, or cost. Cloud is the default observability backend.
-7. **Config is code; YAML is model-registry SoT.** Model aliases, fallbacks, and callback wiring live in `infra/llm-gateway/litellm-config.yaml`. `STORE_MODEL_IN_DB` defaults false — Admin UI/DB model edits are not production alias authority. Prefer reviewable YAML over ad-hoc UI-only state.
-8. **OpenAI-compatible surface is the contract.** Downstream apps should use standard chat/completions (and related) clients pointed at this proxy. Avoid baking provider-specific SDKs into first-party apps unless necessary.
+1. **Never commit secrets.** Use gitignored `.env` from `infra/llm-gateway/.env.example`. Apps use `infra/llm-gateway/.env.app.example`.
+2. **`LITELLM_SALT_KEY` is permanent.** Generate once per environment; offline escrow; never rotate casually.
+3. **Pin images by digest** in Compose (tag + `@sha256:…`). No floating `latest` / unpinned `main-stable` in production artifacts. CI enforces digests.
+4. **PostgreSQL is required** for virtual keys, teams, budgets, spend.
+5. **Redis is optional** until multi-instance; prefer host/port/password over sole `redis_url`.
+6. **Do not self-host Langfuse by default.**
+7. **YAML is model-registry SoT** (`infra/llm-gateway/litellm-config.yaml`). `STORE_MODEL_IN_DB=False`. No raw keys in YAML — `os.environ/...` only.
+8. **OpenAI-compatible surface is the app contract.** Prefer stable aliases (`llm-general`, …).
+9. **Master key is admin-only.** Apps use virtual keys (`LLG_DISALLOW_MASTER` default on).
+10. **Langfuse region:** `LANGFUSE_HOST` and `LANGFUSE_OTEL_HOST` must match the project region (US vs bare `cloud.langfuse.com` EU). Never print secret key values in logs or chat.
+11. **Never claim production readiness** without pins, Postgres, secrets hygiene, and a verified smoke + telemetry path.
 
 ## Layout
 
 ```
-infra/llm-gateway/      # Canonical Compose + litellm-config.yaml (YAML SoT) + .env.example
-config/llm/environments/# Non-secret per-env params (dev/staging/prod)
-docker-compose.yml      # Thin include shim → infra/llm-gateway/compose.yaml
-docker-compose.redis.yml# Thin include shim → infra/llm-gateway/compose.redis.yaml
-docs/llm-platform/      # Architecture, inventory, incident-recovery, platform docs
-examples/               # Minimal client examples (Python + TypeScript)
-src/llg/                # Consolidated ops CLI (`uv run llg …`)
-src/llm_client/         # App GatewayClient + metadata validation + error types
-scripts/                # Thin re-exports of llg helpers (backward compatible)
-.github/workflows/      # CI
+infra/llm-gateway/       # Compose, litellm-config, .env.example, .env.app.example
+config/llm/              # model-aliases, metadata schema, environments/*
+src/llg/                 # Ops CLI: uv run llg …
+src/llm_client/          # App GatewayClient + metadata + errors
+scripts/                 # Thin re-exports of llg
+examples/                # reference_workflow, python/ts clients
+docs/llm-platform/       # Architecture, app-wiring, ops, …
+tests/                   # unit + live-gated integration
 ```
 
 ## Common tasks
 
 | Goal | Approach |
 | --- | --- |
-| Local stack up | Copy `.env.example` → `.env`, fill keys, `uv run llg up` (or `docker compose -f infra/llm-gateway/compose.yaml up -d`) |
-| Add a model alias | Edit `infra/llm-gateway/litellm-config.yaml` `model_list`; keep provider keys in env |
-| Enable Redis | `uv run llg up --redis` (or compose redis overlay) and set Redis env vars |
-| Wire Langfuse | Set `LANGFUSE_*` in `.env` (incl. optional `LANGFUSE_OTEL_HOST`); `langfuse_otel` success/failure callbacks in litellm-config |
-| App client | `src/llm_client` (`GatewayClient` + metadata contract); `examples/reference_workflow.py`; virtual key only (`LLG_DISALLOW_MASTER` default on) |
-| App wiring | `docs/llm-platform/app-wiring.md` + `infra/llm-gateway/.env.app.example` — apps get base URL + virtual key only; no provider/master keys |
-| Metadata contract | `config/llm/metadata-contract.schema.json` + `llm_client.metadata` |
+| Local stack | `cp infra/llm-gateway/.env.example infra/llm-gateway/.env`, fill keys, `uv run llg up` |
+| Health | `uv run llg health` |
+| Secrets | `uv run llg secrets generate` |
 | Validate config | `uv run llg config validate` |
-| Health check | `uv run llg health` / `llg health --path /health/readiness` or `GET /health/liveliness` |
-| Virtual keys | `uv run llg keys create --models … --max-budget … --rpm …`; `llg keys list`; `llg keys revoke` (needs `LITELLM_MASTER_KEY`; never print master) |
-| CI | Push/PR runs lint + config validation workflow |
+| Virtual keys | `uv run llg keys create --models llm-general …` (needs master in shell) |
+| Live smoke | `LLG_LIVE=1` + real `LITELLM_VIRTUAL_KEY` (`sk-…`) → `uv run llg smoke --alias …` |
+| Wire an app | `docs/llm-platform/app-wiring.md` + `.env.app.example` |
+| Add alias | Edit `config/llm/model-aliases.yaml` + `litellm-config.yaml`; keep in sync; validate |
+| Langfuse | Proxy: `LANGFUSE_*` + classic `langfuse` callbacks in config; recreate litellm after env change |
+| Redis | `uv run llg up --redis` or redis compose overlay |
 
-## Python / Node tooling
+## Tooling
 
-- **Python** (`pyproject.toml` + `uv.lock`): config validation helpers, scripts, optional thin client utilities. Use **`uv`** (`uv sync --all-extras`); `uv run ruff` + `uv run pytest` are the default quality gates.
-- **Node** (`package.json` + `pnpm-lock.yaml`): lightweight TS examples and script runners. Use **`pnpm`** (`pnpm install`, `pnpm typecheck`). Not a full application monorepo — keep it thin.
+- **Python:** `uv sync --all-extras`; `uv run ruff` / `uv run pytest` / `uv run llg …`
+- **Node:** `pnpm install` / `pnpm typecheck` (examples only)
 
 ## What not to do
 
-- Do not put provider API keys in gateway YAML; reference `os.environ/...` only.
-- Do not document or implement exploit paths against the proxy, master key, or salt key.
-- Do not expand scope into a full agent framework, RAG product, or self-hosted Langfuse HA cluster unless that is an explicit task.
-- Do not claim production readiness without: pinned image, Postgres, master + salt keys, secrets management, and a health/smoke path.
+- Put provider keys or master key in app env or browser code.
+- Put secrets in YAML, fixtures, or Langfuse metadata.
+- Invent aliases without a consumer.
+- Enable multi-provider fallbacks without compatibility evidence.
+- Print full API keys in terminal diagnostics or user-facing chat.
+- Claim “done” from docs alone — require exercised verification when asserting live behavior.
 
 ## Verification bar
 
 Before claiming a change works:
 
-1. Config YAML still parses / validates.
-2. Compose files are valid (`docker compose config`).
-3. No secrets appear in the diff.
-4. README / AGENTS stay aligned if architecture or env vars change.
+1. `uv run llg config validate` (or equivalent) passes.
+2. Compose validates (`docker compose … config`).
+3. Hermetic tests pass; live claims need `LLG_LIVE` evidence.
+4. No secrets in the diff.
+5. README / AGENTS / app-wiring stay aligned when env vars, aliases, or callbacks change.

@@ -1,145 +1,164 @@
 # LiteLLM + Langfuse Gateway
 
-Centralized **OpenAI-compatible LLM gateway** (LiteLLM) with **observability and quality** (Langfuse).
+Centralized **OpenAI-compatible LLM gateway** (LiteLLM) with **observability** (Langfuse Cloud).
 
-Applications and agents talk to one proxy. LiteLLM owns credentials, virtual keys, budgets, routing, and spend. Langfuse owns traces, sessions, evaluations, and product-quality feedback.
+Applications talk to one proxy with a **virtual key**. LiteLLM owns provider credentials, aliases, budgets, routing, and spend. Langfuse owns traces, sessions, costs, and quality feedback.
 
 ## Architecture
 
 ```
-Applications and agents
-         │
-         │ OpenAI-compatible requests
+Applications / agents
+         │  LITELLM_BASE_URL + LITELLM_VIRTUAL_KEY
+         │  model: llm-general | openai-general | …
          ▼
-    LiteLLM Proxy
+    LiteLLM Proxy  (pinned image + Postgres)
       │       │
       │       ├── PostgreSQL: keys, teams, budgets, spend
-      │       └── Langfuse OTEL callback: per-call telemetry
+      │       └── Langfuse callback: per-call generations
       │
       ├── OpenAI
       ├── Anthropic
       ├── Google Gemini
       └── xAI/Grok
 
-Applications and agents
-         │
-         └── Langfuse application tracing
-               ├── request trace
-               ├── retrieval/tool spans
-               ├── LiteLLM generations
-               ├── user and session identity
-               └── scores/evaluations
+Applications (optional)
+         └── Langfuse app tracing
+               ├── root request trace
+               ├── retrieval / tool spans
+               ├── session / user identity
+               └── scores / evaluations
 ```
 
-### Ownership split
+### Ownership
 
 | Concern | Owner |
 | --- | --- |
-| Provider credentials, model aliases, virtual keys, model permissions | LiteLLM |
-| Budgets, routing, rate limits, retries, fallbacks, normalized errors | LiteLLM |
-| Consolidated spend tracking | LiteLLM (+ Postgres) |
-| Request-level token / cost / latency telemetry | LiteLLM → Langfuse (`langfuse_otel`) |
-| App traces, retrieval/tools, agents, sessions, users, scores, datasets | Langfuse (app instrumentation) |
+| Provider credentials, model aliases, virtual keys, ACL | LiteLLM |
+| Budgets, rate limits, routing, retries, normalized errors | LiteLLM |
+| Consolidated spend | LiteLLM + PostgreSQL |
+| Per-call generation telemetry | LiteLLM → Langfuse (`success_callback: ["langfuse"]`) |
+| App workflow traces, tools, retrieval, scores | Langfuse (app instrumentation) |
 
-### Deployment recommendation (initial)
+### Default deployment
 
-| Component | Choice | Why |
-| --- | --- | --- |
-| LiteLLM Proxy | **Self-hosted** | Control plane for keys, budgets, routing |
-| PostgreSQL | **Self-hosted** (or managed) | Required for keys, teams, config, spend |
-| Langfuse | **Cloud** | Avoid ops burden; Compose is for local/low-scale only |
-| Redis | **Later** | Add when multi-replica or distributed rate limits / routing state |
+| Component | Choice |
+| --- | --- |
+| LiteLLM | Self-hosted (Compose / your platform) |
+| PostgreSQL | Required for keys, budgets, spend |
+| Langfuse | **Cloud** (match `LANGFUSE_HOST` to project region: US `https://us.cloud.langfuse.com` or EU `https://cloud.langfuse.com`) |
+| Redis | Only when multi-replica / shared rate limits |
 
-LiteLLM production guidance: pin releases; treat **`LITELLM_SALT_KEY` as a permanent encryption secret**; use Postgres for multi-tenant proxy state; use Redis across multiple proxy instances.
+Treat **`LITELLM_SALT_KEY` as permanent**. Pin images by **tag + digest** (see `infra/llm-gateway/compose.yaml`).
 
-**Do not self-host Langfuse initially** unless data-residency, regulatory, or cost requirements justify the extra infrastructure. Upstream Docker Compose for Langfuse is aimed at local or low-scale use and lacks HA, horizontal scaling, and built-in backup.
+---
+
+## Documentation map
+
+| Doc | Purpose |
+| --- | --- |
+| [docs/llm-platform/app-wiring.md](docs/llm-platform/app-wiring.md) | **Wire an app** (env, keys, Python/TS, verification) |
+| [docs/llm-platform/architecture.md](docs/llm-platform/architecture.md) | Ownership, YAML SoT, secret hierarchy |
+| [docs/llm-platform/operating-guide.md](docs/llm-platform/operating-guide.md) | Day-2 ops, checklist |
+| [docs/llm-platform/application-migration.md](docs/llm-platform/application-migration.md) | Migrate off direct provider keys |
+| [docs/llm-platform/provider-onboarding.md](docs/llm-platform/provider-onboarding.md) | Provider / alias notes |
+| [docs/llm-platform/incident-recovery.md](docs/llm-platform/incident-recovery.md) | Salt / master recovery |
+| [infra/llm-gateway/README.md](infra/llm-gateway/README.md) | Compose stack details, pins |
+| [AGENTS.md](AGENTS.md) | Rules for coding agents |
+
+---
 
 ## Quick start
 
 ### Prerequisites
 
-- Docker + Docker Compose
-- Provider API keys you intend to use (OpenAI, Anthropic, Gemini, xAI, …)
-- A [Langfuse Cloud](https://cloud.langfuse.com) project (public + secret key)
+- Docker + Docker Compose  
+- [uv](https://docs.astral.sh/uv/) (Python tooling / `llg` CLI)  
+- Provider API keys you will use  
+- Langfuse Cloud project (public + secret key), **region matched to host**
 
-### 1. Configure environment
-
-```bash
-cp .env.example .env
-# canonical template also at: infra/llm-gateway/.env.example
-```
-
-Edit `.env`:
-
-1. Generate strong values for `LITELLM_MASTER_KEY`, `LITELLM_SALT_KEY`, and `POSTGRES_PASSWORD`.
-2. Set provider keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`, …).
-3. Set `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and `LANGFUSE_HOST` (Cloud host; optional `LANGFUSE_OTEL_HOST`).
-
-> **Salt key:** generate once and store offline. Changing `LITELLM_SALT_KEY` later can make encrypted proxy data unreadable.
+### 1. Proxy environment
 
 ```bash
-# Example secret generation (Python)
-python -c "import secrets; print('sk-' + secrets.token_urlsafe(32))"
+cp infra/llm-gateway/.env.example infra/llm-gateway/.env
+# or: cp .env.example .env   # root copy points at the same contract
 ```
 
-Or use `python scripts/generate_secrets.py`.
+In `infra/llm-gateway/.env` (or root `.env` used by Compose):
+
+1. Set `LITELLM_MASTER_KEY`, `LITELLM_SALT_KEY`, `POSTGRES_PASSWORD` (generate with `uv run llg secrets generate`).
+2. Set provider keys you need (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`, …).
+3. Set Langfuse:
+   - `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY`
+   - `LANGFUSE_HOST` **and** `LANGFUSE_OTEL_HOST` to the **same** region host (e.g. both `https://us.cloud.langfuse.com` for a US project).
+
+Optional: if host Postgres already uses `5432`, set `POSTGRES_PORT=5433`.
 
 ### 2. Start the stack
 
-Canonical Compose lives under `infra/llm-gateway/`. Root `docker-compose.yml` is a thin include shim:
-
 ```bash
-docker compose up -d
-# equivalent: docker compose -f infra/llm-gateway/compose.yaml up -d
+# From repo root (preferred ops CLI)
+uv sync --all-extras
+uv run llg up
+
+# Or Compose directly
+docker compose -f infra/llm-gateway/compose.yaml up -d
+# root shim: docker compose up -d
 ```
 
-Services:
-
-| Service | Default | Role |
+| Service | Host default | Role |
 | --- | --- | --- |
-| `litellm` | `http://localhost:4000` | OpenAI-compatible proxy + admin UI |
-| `postgres` | `localhost:5432` | Keys, teams, budgets, spend |
-
-Optional Redis (multi-replica / shared limits):
+| LiteLLM | `http://localhost:4000` | API + Admin UI |
+| Postgres | `localhost:5432` (or `POSTGRES_PORT`) | Keys / spend |
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d
+uv run llg health
+# or: curl -s http://localhost:4000/health/liveliness
 ```
 
-### 3. Smoke test
+### 3. Create a virtual key (apps use this, not the master key)
 
 ```bash
-# Liveness
-curl -s http://localhost:4000/health/liveliness
+# Master key must be in the shell for admin API (not in the app)
+export LITELLM_MASTER_KEY=sk-...   # from .env
+export LITELLM_BASE_URL=http://localhost:4000
 
-# Chat completion (use a virtual key from the UI, or master key only for admin bootstrapping)
-curl -s http://localhost:4000/v1/chat/completions \
-  -H "Authorization: Bearer $LITELLM_MASTER_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "llm-general",
-    "messages": [{"role": "user", "content": "Say hello in one word."}]
-  }'
+uv run llg keys create \
+  --models llm-general,openai-general,gemini-general,grok-general,anthropic-general \
+  --max-budget 10 \
+  --rpm 60 \
+  --key-alias local-dev
 ```
 
-Prefer **virtual keys** (scoped, budgeted) for applications. Reserve the master key for administration.
+Copy the printed `sk-…` key once. Put it in the **app** env (see `.env.app.example`), never commit it.
 
-### 4. Wire an app (base URL + virtual key only)
+### 4. Smoke (live)
 
-**Full runbook:** [docs/llm-platform/app-wiring.md](docs/llm-platform/app-wiring.md)  
-**App env template:** [infra/llm-gateway/.env.app.example](infra/llm-gateway/.env.app.example)
+```bash
+export LLG_LIVE=1
+export LITELLM_VIRTUAL_KEY=sk-...   # real virtual key, must start with sk-
+export LITELLM_BASE_URL=http://localhost:4000/v1
+
+uv run llg smoke --alias openai-general
+# optional: gemini-general, grok-general, anthropic-general, llm-general
+```
+
+Confirm a generation in the Langfuse UI (same region/project as proxy keys).  
+Spend / keys: Admin UI at `http://localhost:4000/ui` (master key).
+
+### 5. Wire an application
 
 Apps need **only**:
 
 ```env
 LITELLM_BASE_URL=http://localhost:4000/v1
-LITELLM_VIRTUAL_KEY=sk-...   # from: uv run llg keys create --models llm-general ...
-LITELLM_MODEL=llm-general    # optional
+LITELLM_VIRTUAL_KEY=sk-...
+LITELLM_MODEL=llm-general
 ```
 
-Do **not** put provider API keys or `LITELLM_MASTER_KEY` in the app.
+Template: [`infra/llm-gateway/.env.app.example`](infra/llm-gateway/.env.app.example)  
+Full guide: [`docs/llm-platform/app-wiring.md`](docs/llm-platform/app-wiring.md)
 
-**Python (preferred — metadata + errors):**
+**Do not** put provider API keys or `LITELLM_MASTER_KEY` in the app.
 
 ```python
 from llm_client import GatewayClient, GatewayConfig, RequestMetadata
@@ -163,94 +182,98 @@ with client:
     )
 ```
 
-**Python / TypeScript (OpenAI SDK):**
+Or any OpenAI-compatible SDK with `base_url` / `baseURL` + virtual key. Samples: `examples/reference_workflow.py`, `examples/python_client.py`, `examples/ts_client.ts`.
 
-```python
-from openai import OpenAI
-import os
-client = OpenAI(
-    api_key=os.environ["LITELLM_VIRTUAL_KEY"],
-    base_url=os.environ.get("LITELLM_BASE_URL", "http://localhost:4000/v1"),
-)
-```
+---
 
-```ts
-import OpenAI from "openai";
-const client = new OpenAI({
-  apiKey: process.env.LITELLM_VIRTUAL_KEY!,
-  baseURL: process.env.LITELLM_BASE_URL ?? "http://localhost:4000/v1",
-});
-```
+## Model aliases
 
-Runnable samples: `examples/reference_workflow.py`, `examples/python_client.py`, `examples/ts_client.ts`.
+Configured in `config/llm/model-aliases.yaml` and `infra/llm-gateway/litellm-config.yaml` (YAML is source of truth).
+
+| Alias | Role |
+| --- | --- |
+| `llm-general` | Default product chat (OpenAI-backed) |
+| `openai-general` | Explicit OpenAI |
+| `anthropic-general` | Explicit Anthropic |
+| `gemini-general` | Explicit Gemini (`gemini-3.5-flash`) |
+| `grok-general` | Explicit xAI / Grok |
+
+Apps should prefer **aliases**, not raw vendor model strings. Fallbacks are **off** by default.
+
+---
 
 ## Configuration
 
 | Path | Purpose |
 | --- | --- |
-| `infra/llm-gateway/litellm-config.yaml` | **Model registry SoT** — aliases, callbacks, router |
-| `infra/llm-gateway/compose.yaml` | Canonical LiteLLM + Postgres stack |
-| `infra/llm-gateway/compose.redis.yaml` | Optional Redis overlay |
-| `.env` | Secrets and runtime env (not committed) |
-| `docker-compose.yml` | Thin root shim → infra compose |
+| `infra/llm-gateway/compose.yaml` | Canonical LiteLLM + Postgres |
+| `infra/llm-gateway/litellm-config.yaml` | Models, callbacks, timeouts |
+| `infra/llm-gateway/.env.example` | **Proxy** secrets template |
+| `infra/llm-gateway/.env.app.example` | **App** env template |
+| `config/llm/model-aliases.yaml` | Alias contract |
+| `config/llm/metadata-contract.schema.json` | Request metadata schema |
+| `docker-compose.yml` | Thin include shim → infra |
 
-**YAML is the source of truth** for production model aliases. Compose defaults `STORE_MODEL_IN_DB=False`; Admin UI/DB model edits are not production alias authority. See [docs/llm-platform/architecture.md](docs/llm-platform/architecture.md).
+Never put raw API keys in YAML — only `os.environ/...`.
 
-Model list entries reference provider keys via environment variables — never put raw API keys in YAML.
-
-Langfuse: the proxy exports each generation via the classic `langfuse` success/failure callback (see `infra/llm-gateway/litellm-config.yaml`). Application code should still create **app-level** Langfuse root traces for multi-step workflows (retrieval, tools, agents)—without dual-writing the same generation unless deliberate.
+---
 
 ## Repository layout
 
 ```
 .
-├── AGENTS.md                 # Instructions for coding agents
-├── infra/llm-gateway/        # Canonical gateway stack + litellm-config.yaml
-├── docker-compose.yml        # Thin include shim
-├── docker-compose.redis.yml  # Thin include shim
-├── docs/llm-platform/        # Architecture, inventory
+├── AGENTS.md
+├── README.md
+├── infra/llm-gateway/          # Compose, litellm-config, .env templates
+├── config/llm/                 # Aliases, metadata schema, env contracts
+├── src/llg/                    # Ops CLI: uv run llg …
+├── src/llm_client/             # App client (GatewayClient)
+├── scripts/                    # Thin re-exports of llg helpers
 ├── examples/
+│   ├── reference_workflow.py
 │   ├── python_client.py
 │   └── ts_client.ts
-├── scripts/
-│   ├── generate_secrets.py
-│   ├── healthcheck.py
-│   └── validate_config.py
-├── .github/workflows/ci.yml
-├── pyproject.toml            # Python tooling
-└── package.json              # JS/TS examples & scripts
+├── docs/llm-platform/          # Architecture, wiring, ops, …
+├── tests/
+├── pyproject.toml + uv.lock
+└── package.json + pnpm-lock.yaml
 ```
+
+---
 
 ## Development tooling
 
-**Python** ([uv](https://docs.astral.sh/uv/)):
-
 ```bash
+# Python
 uv sync --all-extras
 uv run ruff check .
 uv run pytest
-```
+uv run llg config validate
 
-**Node / TypeScript** ([pnpm](https://pnpm.io/)):
-
-```bash
+# TypeScript examples
 pnpm install
 pnpm typecheck
 ```
 
-**CI** (GitHub Actions) uses `uv` + `pnpm` lockfiles for lint, Python tests, typecheck, and Compose config validation on push/PR to `main`.
+CI on `main` runs ruff, pytest, typecheck, image-pin enforcement, and Compose validation.
+
+---
 
 ## Production checklist
 
-- [ ] Pin LiteLLM image to a specific release tag
-- [ ] Postgres with backups and durable volume
-- [ ] Unique `LITELLM_MASTER_KEY` and permanent `LITELLM_SALT_KEY` in a secret store
-- [ ] Virtual keys per app/team with budgets and model allow-lists
-- [ ] Langfuse Cloud keys restricted and rotated as policy requires
-- [ ] Redis when running >1 proxy replica
-- [ ] TLS termination and network isolation in front of the proxy
+- [ ] Image digests pinned (not floating `latest` / `main-stable`)
+- [ ] Postgres backups + durable volume
+- [ ] `LITELLM_MASTER_KEY` + permanent `LITELLM_SALT_KEY` in a secret store
+- [ ] Virtual keys per app × environment (budgets + model allow-lists)
+- [ ] Langfuse keys match project region; host and OTEL host consistent
+- [ ] Redis when running more than one proxy replica
+- [ ] TLS + private network for the proxy
+- [ ] Apps have no provider keys / no master key
 - [ ] Health checks and log aggregation
-- [ ] Fallback model groups tested under provider failure
+
+See [operating-guide.md](docs/llm-platform/operating-guide.md).
+
+---
 
 ## License
 

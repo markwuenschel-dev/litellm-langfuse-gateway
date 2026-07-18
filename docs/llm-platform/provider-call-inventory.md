@@ -57,7 +57,7 @@ These are the **current** LiteLLM `model_name` aliases clients may request. Prov
 
 **Fallbacks:** Commented out in config; not live.
 
-**Telemetry (gateway):** `success_callback` / `failure_callback`: `langfuse_otel` (requires `LANGFUSE_*` env).
+**Telemetry (gateway):** `success_callback` / `failure_callback`: classic `langfuse` (requires `LANGFUSE_*` env; host must match project region).
 
 ---
 
@@ -65,9 +65,9 @@ These are the **current** LiteLLM `model_name` aliases clients may request. Prov
 
 | App / source | Models / aliases requested | Features used | Credential source | Telemetry today | Privacy tier |
 | --- | --- | --- | --- | --- | --- |
-| `examples/python_client.py` | Default `gpt-4o-mini`; override via `LITELLM_MODEL` | Chat completions only (non-stream, no tools, no structured output, no embeddings) | `LITELLM_VIRTUAL_KEY` preferred, else `LITELLM_MASTER_KEY`; base `LITELLM_BASE_URL` | None in example; gateway may emit `langfuse_otel` if configured | Non-sensitive (fixed “pong” prompt) |
+| `examples/python_client.py` | Default `llm-general`; override via `LITELLM_MODEL` | Chat completions only (non-stream, no tools) | `LITELLM_VIRTUAL_KEY` only (`sk-…`); base `LITELLM_BASE_URL` | Gateway classic `langfuse` if configured | Non-sensitive (“pong” prompt) |
 | `examples/ts_client.ts` | Same: default `gpt-4o-mini`; `LITELLM_MODEL` | Same as Python | Same | Same | Non-sensitive |
-| `README.md` curl smoke | Hardcoded `gpt-4o-mini` | Chat completions only | `LITELLM_MASTER_KEY` in Authorization header (bootstrap) | Gateway `langfuse_otel` if configured | Non-sensitive |
+| `README.md` / `llg smoke` | Stable aliases (`llm-general`, …) | Chat smokes | Virtual key for apps; master for admin only | Gateway classic `langfuse` if configured | Non-sensitive |
 | `tests/test_validate_config.py` | Fixture names `demo`, `gpt-4o-mini` | N/A (config validation, no live calls) | Fixture `os.environ/OPENAI_API_KEY` strings | N/A | N/A |
 | Planned reference workflow (plan WP11 / §7.1) | Intended: `llm-general` (and optionally `llm-fast`) | Planned: chat + later stream/tools/structured matrix (WP13) | Virtual key per app/env via gateway | App Langfuse root + gateway generation | Default non-sensitive for reference |
 | Planned provider smokes (plan WP6) | Intended: `openai-general`, `anthropic-general`, `gemini-general`, `grok-general` | Smoke: chat; matrix later | Gateway provider keys + smoke uses gateway auth | Spend + Langfuse generation evidence | Non-sensitive smoke prompts |

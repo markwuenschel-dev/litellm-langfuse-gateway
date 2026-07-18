@@ -67,7 +67,7 @@ Detection: proxy boot / admin logs (redact any residual secret material). Compar
 
 ### Bootstrap checklist (prevent the incident)
 
-- [ ] Generate salt once: `uv run python scripts/generate_secrets.py`
+- [ ] Generate salt once: `uv run llg secrets generate`
 - [ ] Store in secret manager under a clear path (e.g. `llm-gateway/{env}/LITELLM_SALT_KEY`)
 - [ ] Write offline escrow; dual-control access; test restore from escrow in staging once
 - [ ] Document who can retrieve escrow (on-call + security)
