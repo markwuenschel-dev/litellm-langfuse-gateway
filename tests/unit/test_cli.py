@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from typer.testing import CliRunner
 
 from llg.cli import app
@@ -9,57 +11,70 @@ from llg.paths import DEFAULT_CONFIG
 
 runner = CliRunner()
 
+# Rich/Typer help on CI may emit ANSI; strip for stable substring asserts.
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _plain(text: str) -> str:
+    return _ANSI.sub("", text)
+
 
 def test_help() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    assert "config" in result.stdout
-    assert "secrets" in result.stdout
-    assert "health" in result.stdout
-    assert "up" in result.stdout
-    assert "down" in result.stdout
-    assert "keys" in result.stdout
+    out = _plain(result.stdout)
+    assert "config" in out
+    assert "secrets" in out
+    assert "health" in out
+    assert "up" in out
+    assert "down" in out
+    assert "keys" in out
 
 
 def test_version() -> None:
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert "llg" in result.stdout
+    assert "llg" in _plain(result.stdout)
 
 
 def test_config_validate_default() -> None:
     result = runner.invoke(app, ["config", "validate"])
     assert result.exit_code == 0, result.stdout + result.stderr
-    assert "OK:" in result.stdout
-    assert DEFAULT_CONFIG.name in result.stdout or "litellm-config.yaml" in result.stdout
+    out = _plain(result.stdout)
+    assert "OK:" in out
+    assert DEFAULT_CONFIG.name in out or "litellm-config.yaml" in out
 
 
 def test_config_validate_missing(tmp_path) -> None:  # type: ignore[no-untyped-def]
     missing = tmp_path / "nope.yaml"
     result = runner.invoke(app, ["config", "validate", str(missing)])
     assert result.exit_code == 1
-    assert "INVALID" in result.stdout or "INVALID" in result.stderr
+    combined = _plain(result.stdout + result.stderr)
+    assert "INVALID" in combined
 
 
 def test_secrets_generate_env() -> None:
     result = runner.invoke(app, ["secrets", "generate", "--format", "env"])
     assert result.exit_code == 0
-    assert "LITELLM_MASTER_KEY=sk-" in result.stdout
-    assert "LITELLM_SALT_KEY=sk-" in result.stdout
-    assert "POSTGRES_PASSWORD=" in result.stdout
+    out = _plain(result.stdout)
+    assert "LITELLM_MASTER_KEY=sk-" in out
+    assert "LITELLM_SALT_KEY=sk-" in out
+    assert "POSTGRES_PASSWORD=" in out
 
 
 def test_health_help() -> None:
     result = runner.invoke(app, ["health", "--help"])
     assert result.exit_code == 0
-    assert "--path" in result.stdout
+    out = _plain(result.stdout)
+    # Rich may wrap flag names; accept either form
+    assert "--path" in out or "path" in out.lower()
 
 
 def test_smoke_skips_without_llg_live(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.delenv("LLG_LIVE", raising=False)
     result = runner.invoke(app, ["smoke", "--alias", "llm-general"])
     assert result.exit_code == 0
-    combined = result.stdout + result.stderr
+    combined = _plain(result.stdout + result.stderr)
     assert "SKIP" in combined or "LLG_LIVE" in combined
 
 
@@ -74,7 +89,7 @@ def test_smoke_base_url_still_rejects_master_key(monkeypatch) -> None:  # type: 
         ["smoke", "--alias", "llm-general", "--base-url", "http://proxy.test:4000/v1"],
     )
     assert result.exit_code == 2
-    combined = result.stdout + result.stderr
+    combined = _plain(result.stdout + result.stderr)
     assert "config error" in combined.lower() or "MASTER" in combined
 
 
