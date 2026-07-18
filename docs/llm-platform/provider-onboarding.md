@@ -18,7 +18,7 @@ support claims without evidence.
 | `llm-general` | Default chat | `openai/gpt-4o-mini` | `OPENAI_API_KEY` | Examples, README, reference workflow |
 | `openai-general` | Explicit OpenAI | `openai/gpt-4o-mini` | `OPENAI_API_KEY` | Provider smoke |
 | `anthropic-general` | Explicit Anthropic | `anthropic/claude-haiku-4-5-20251001` | `ANTHROPIC_API_KEY` | Provider smoke |
-| `gemini-general` | Explicit Gemini | `gemini/gemini-2.0-flash` | `GEMINI_API_KEY` | Provider smoke |
+| `gemini-general` | Explicit Gemini | `gemini/gemini-3.5-flash` | `GEMINI_API_KEY` | Provider smoke |
 | `grok-general` | Explicit xAI | `xai/grok-3-mini` | `XAI_API_KEY` | Provider smoke |
 
 **Not shipped:** `llm-fast` (no consumer yet). Azure / Cohere / Groq (env stubs only).

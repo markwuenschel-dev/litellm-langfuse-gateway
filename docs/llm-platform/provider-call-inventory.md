@@ -110,7 +110,7 @@ Current scaffold names (`gpt-4o-mini`, `claude-sonnet`, …) are **vendor-ish bo
 | `llm-general` | Prefer `openai/gpt-4o-mini` (only model with live example/README demand today) | Examples, README smoke, reference workflow | WP7 + client migration |
 | `openai-general` | `openai/gpt-4o-mini` or verified OpenAI id at pin time | Provider smoke (OpenAI) | WP6/WP7 |
 | `anthropic-general` | `anthropic/claude-haiku-4-5-20251001` or verified id (cheap smoke lean) | Provider smoke (Anthropic) | WP6/WP7 |
-| `gemini-general` | `gemini/gemini-2.0-flash` or verified id | Provider smoke (Gemini) | WP6/WP7 |
+| `gemini-general` | `gemini/gemini-3.5-flash` | Provider smoke (Gemini) | WP6/WP7 |
 | `grok-general` | `xai/grok-3-mini` or verified id | Provider smoke (xAI) | WP6/WP7 |
 | `llm-fast` | **Defer** unless reference workflow needs a second tier; candidate backends: `gpt-4o-mini` or `gemini-flash` | Only if WP11/WP13 explicitly needs distinct fast path | Optional later |
 

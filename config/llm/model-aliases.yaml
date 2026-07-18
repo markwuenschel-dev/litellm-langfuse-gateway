@@ -42,7 +42,7 @@ aliases:
 
   gemini-general:
     description: Explicit Google Gemini route for provider smokes
-    litellm_model: gemini/gemini-2.0-flash
+    litellm_model: gemini/gemini-3.5-flash
     api_key_env: GEMINI_API_KEY
     consumers:
       - provider-smoke
@@ -58,5 +58,5 @@ aliases:
 # deferred:
 #   llm-fast:
 #     description: Low latency / cost tier
-#     litellm_model: openai/gpt-4o-mini  # or gemini/gemini-2.0-flash after eval
+#     litellm_model: openai/gpt-4o-mini  # or gemini/gemini-3.5-flash after eval
 #     api_key_env: OPENAI_API_KEY

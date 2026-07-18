@@ -37,7 +37,7 @@ model_list:
   # Explicit Gemini provider route (smokes)
   - model_name: gemini-general
     litellm_params:
-      model: gemini/gemini-2.0-flash
+      model: gemini/gemini-3.5-flash
       api_key: os.environ/GEMINI_API_KEY
 
   # Explicit xAI / Grok provider route (smokes; cheap/fast lean)
@@ -66,13 +66,13 @@ litellm_settings:
   # ^ Optional under write load (spend/logs). Guidance in production.yaml + upgrade-notes.
   #   Leave commented until measured on this pin; wrong batching is worse than default.
 
-  # Request-level telemetry → Langfuse (token, cost, latency) via langfuse_otel.
-  # Env: LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST
-  #      (optional LANGFUSE_OTEL_HOST for regional/OTEL ingest override).
-  # Pin v1.92: success/failure callback lists (also acceptable: callbacks: ["langfuse_otel"]).
-  # Langfuse outage / bad credentials must not fail the primary LLM path.
-  success_callback: ["langfuse_otel"]
-  failure_callback: ["langfuse_otel"]
+  # Request-level telemetry → Langfuse (token, cost, latency).
+  # Classic `langfuse` SDK callback (reliable for Cloud generations UI).
+  # Env: LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST (or LANGFUSE_BASE_URL).
+  # `langfuse_otel` was initialized but not producing visible traces for this pin;
+  # classic callback uses the same keys/host. LLM path must not fail if Langfuse is down.
+  success_callback: ["langfuse"]
+  failure_callback: ["langfuse"]
 
   # Uncomment when Redis is available (multi-replica / shared cache)
   # cache: true

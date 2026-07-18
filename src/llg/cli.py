@@ -426,7 +426,9 @@ def smoke(
                 model=alias,
                 messages=[{"role": "user", "content": "Reply with the single word: pong"}],
                 metadata=meta,
-                max_tokens=16,
+                # Gemini 2.5/3.x thinking models can burn a small max_tokens budget
+                # before any visible content is produced (content ends up null).
+                max_tokens=256,
             )
     except Exception as exc:
         typer.secho(f"FAIL smoke alias={alias}: {exc}", fg=typer.colors.RED, err=True)
@@ -434,9 +436,19 @@ def smoke(
 
     content = ""
     try:
-        content = str(result["choices"][0]["message"]["content"])
+        raw = result["choices"][0]["message"]["content"]
+        content = "" if raw is None else str(raw)
     except (KeyError, IndexError, TypeError):
         content = str(result)[:200]
+    if not content.strip():
+        typer.secho(
+            f"FAIL smoke alias={alias}: empty message content "
+            f"(HTTP OK but no text — often max_tokens too low for thinking models)",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        typer.echo(f"request_id={meta.request_id}")
+        raise typer.Exit(1)
     typer.secho(f"OK smoke alias={alias}", fg=typer.colors.GREEN)
     typer.echo(f"request_id={meta.request_id}")
     typer.echo(f"content_preview={content[:120]!r}")

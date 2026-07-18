@@ -19,7 +19,7 @@ Aliases match `config/llm/model-aliases.yaml` and `infra/llm-gateway/litellm-con
 | `llm-general` | `openai/gpt-4o-mini` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` |
 | `openai-general` | `openai/gpt-4o-mini` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` |
 | `anthropic-general` | `anthropic/claude-haiku-4-5-20251001` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` |
-| `gemini-general` | `gemini/gemini-2.0-flash` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` |
+| `gemini-general` | `gemini/gemini-3.5-flash` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` |
 | `grok-general` | `xai/grok-3-mini` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` | unproven / requires `LLG_LIVE` |
 
 **Deferred alias:** `llm-fast` is not enabled (no consumer yet). Do not invent matrix rows for unused aliases.
