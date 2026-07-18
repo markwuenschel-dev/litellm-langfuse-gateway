@@ -1,0 +1,62 @@
+# Application-facing stable model alias contract (WP6 + WP7).
+#
+# Authority chain:
+#   1. This file defines the semantic aliases apps and smokes must use.
+#   2. infra/llm-gateway/litellm-config.yaml is the runtime model_list SoT
+#      (must expose every alias here with matching litellm_model + env key).
+#   3. Admin UI / DB model edits are NOT production alias authority.
+#
+# Rules:
+#   - Only aliases with consumers (see consumers below). Do not invent unused names.
+#   - api_key_env is an env var name only — never put raw secrets here or in litellm-config.
+#   - Fallback groups are off by default (no ordered multi-provider failover yet).
+#   - Changing an alias→provider mapping requires: reason, eval, cost/latency,
+#     tools/structured check, rollback mapping, and a release note.
+#
+# Model IDs are conservative, widely-available IDs as of scaffold time.
+# Verify at image-pin / smoke time — see docs/llm-platform/provider-onboarding.md.
+
+aliases:
+  llm-general:
+    description: Default chat for apps, examples, README smoke, and reference workflows
+    litellm_model: openai/gpt-4o-mini
+    api_key_env: OPENAI_API_KEY
+    consumers:
+      - examples
+      - readme-smoke
+      - reference-workflow
+
+  openai-general:
+    description: Explicit OpenAI route for provider smokes and deliberate A/B
+    litellm_model: openai/gpt-4o-mini
+    api_key_env: OPENAI_API_KEY
+    consumers:
+      - provider-smoke
+
+  anthropic-general:
+    description: Explicit Anthropic route for provider smokes (cheap/fast lean)
+    litellm_model: anthropic/claude-haiku-4-5-20251001
+    api_key_env: ANTHROPIC_API_KEY
+    consumers:
+      - provider-smoke
+
+  gemini-general:
+    description: Explicit Google Gemini route for provider smokes
+    litellm_model: gemini/gemini-3.5-flash
+    api_key_env: GEMINI_API_KEY
+    consumers:
+      - provider-smoke
+
+  grok-general:
+    description: Explicit xAI / Grok route for provider smokes (cheap/fast lean)
+    litellm_model: xai/grok-3-mini
+    api_key_env: XAI_API_KEY
+    consumers:
+      - provider-smoke
+
+# Deferred until a consumer requires a second tier (plan §7.1 / WP11).
+# deferred:
+#   llm-fast:
+#     description: Low latency / cost tier
+#     litellm_model: openai/gpt-4o-mini  # or gemini/gemini-3.5-flash after eval
+#     api_key_env: OPENAI_API_KEY

@@ -1,0 +1,99 @@
+# LiteLLM Proxy configuration
+# Docs: https://docs.litellm.ai/docs/proxy/configs
+#
+# Model registry authority (YAML SoT):
+# - This file is the production source of truth for model aliases and routes.
+# - Semantic alias contract: config/llm/model-aliases.yaml (must stay in sync).
+# - Admin UI / DB model edits are NOT authority for production aliases.
+# - Compose sets STORE_MODEL_IN_DB=False by default to avoid split-brain.
+#
+# Rules:
+# - Never put raw API keys in this file — use os.environ/...
+# - Model "model_name" values are the aliases clients request
+# - litellm_params.model is the provider-specific route
+# - Stable app-facing aliases only (llm-general + four *-general). No llm-fast yet.
+# - Fallbacks OFF by default (see commented router_settings).
+
+model_list:
+  # --- Stable app / smoke aliases (WP6 + WP7) ---
+  # Default chat — apps, examples, README smoke, reference workflow
+  - model_name: llm-general
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  # Explicit OpenAI provider route (smokes / A-B)
+  - model_name: openai-general
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  # Explicit Anthropic provider route (smokes; cheap/fast lean)
+  - model_name: anthropic-general
+    litellm_params:
+      model: anthropic/claude-haiku-4-5-20251001
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  # Explicit Gemini provider route (smokes)
+  - model_name: gemini-general
+    litellm_params:
+      model: gemini/gemini-3.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+  # Explicit xAI / Grok provider route (smokes; cheap/fast lean)
+  - model_name: grok-general
+    litellm_params:
+      model: xai/grok-3-mini
+      api_key: os.environ/XAI_API_KEY
+
+# Fallbacks OFF by default. Enable only after stream/tools/structured compatibility
+# is proven (plan WP13) and each hop is an explicit alias with a consumer.
+# router_settings:
+#   fallbacks: []
+#   # Example (do not enable without evidence):
+#   # fallbacks:
+#   #   - llm-general: [openai-general, anthropic-general]
+
+litellm_settings:
+  # Production-lean defaults (dev can override via env / LITELLM_MODE elsewhere)
+  # LITELLM_MODE=PRODUCTION is set in staging/prod env contracts and compose.staging overlay.
+  request_timeout: 600
+  drop_params: true
+  # Prefer structured logs in non-dev; keep verbose off by default
+  json_logs: true
+  set_verbose: false
+  # proxy_batch_write_at: 60
+  # ^ Optional under write load (spend/logs). Guidance in production.yaml + upgrade-notes.
+  #   Leave commented until measured on this pin; wrong batching is worse than default.
+
+  # Request-level telemetry → Langfuse (token, cost, latency).
+  # Classic `langfuse` SDK callback (reliable for Cloud generations UI).
+  # Env: LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST (or LANGFUSE_BASE_URL).
+  # `langfuse_otel` was initialized but not producing visible traces for this pin;
+  # classic callback uses the same keys/host. LLM path must not fail if Langfuse is down.
+  success_callback: ["langfuse"]
+  failure_callback: ["langfuse"]
+
+  # Uncomment when Redis is available (multi-replica / shared cache)
+  # cache: true
+  # cache_params:
+  #   type: redis
+  #   host: os.environ/REDIS_HOST
+  #   port: os.environ/REDIS_PORT
+  #   password: os.environ/REDIS_PASSWORD
+
+general_settings:
+  # Master key and DATABASE_URL are typically injected via environment:
+  #   LITELLM_MASTER_KEY, DATABASE_URL, LITELLM_SALT_KEY
+  # master_key: os.environ/LITELLM_MASTER_KEY
+  # database_url: os.environ/DATABASE_URL
+
+  # YAML is model-registry authority. Do not enable store_model_in_db for production
+  # aliases without an ADR that flips SoT from this file to the Admin UI/DB.
+  # store_model_in_db: false  # also enforced via STORE_MODEL_IN_DB=False in compose
+
+  # Redis for multi-instance rpm/tpm and routing state (prefer host/port/password)
+  # redis_host: os.environ/REDIS_HOST
+  # redis_port: os.environ/REDIS_PORT
+  # redis_password: os.environ/REDIS_PASSWORD
+  # use_redis_transaction_buffer: true

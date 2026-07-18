@@ -1,0 +1,39 @@
+# Non-secret environment contract — staging
+# Secrets (keys, passwords, salt) live in a secret manager only — never in git.
+# See: infra/llm-gateway/.env.example, docs/llm-platform/incident-recovery.md
+
+environment: staging
+
+# Model registry authority remains YAML (infra/llm-gateway/litellm-config.yaml)
+store_model_in_db: false
+
+# Production-like posture for pre-prod validation
+litellm_mode: PRODUCTION
+log_level: INFO
+json_logs: true
+set_verbose: false
+
+# Timeouts (seconds)
+request_timeout: 600
+health_timeout: 10
+
+# Redis required when running more than one LiteLLM replica or shared rpm/tpm
+redis_required: true
+
+postgres_required: true
+
+langfuse:
+  backend: cloud
+  required_for_llm_path: false
+
+admin_ui:
+  public: false
+  note: "SSO or network allowlist required; not on the public internet"
+
+# Compose: infra/llm-gateway/compose.staging.yaml (overlay on compose.yaml)
+# Smoke identity: low-budget virtual key, restricted models (see operating-guide.md)
+ops:
+  compose_overlay: infra/llm-gateway/compose.staging.yaml
+  smoke_max_budget_usd: 5
+  smoke_key_alias_prefix: staging-smoke
+  tls: "Terminate at ingress / reverse proxy; local Compose is plain HTTP"

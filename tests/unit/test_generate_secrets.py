@@ -1,14 +1,20 @@
-"""Tests for scripts.generate_secrets."""
+"""Tests for llg.generate_secrets (and scripts re-export)."""
 
 from __future__ import annotations
 
-from scripts.generate_secrets import generate_key, generate_password, main
+from llg.generate_secrets import generate_key, generate_password, main
+from scripts.generate_secrets import generate_key as scripts_generate_key
 
 
 def test_generate_key_prefix() -> None:
     key = generate_key()
     assert key.startswith("sk-")
     assert len(key) > 10
+
+
+def test_scripts_reexport_callable() -> None:
+    key = scripts_generate_key()
+    assert key.startswith("sk-")
 
 
 def test_generate_password_no_sk_prefix_required() -> None:

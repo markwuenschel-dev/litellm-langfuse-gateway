@@ -13,7 +13,7 @@ Applications and agents
          ▼
     LiteLLM Proxy
       │       │
-      │       ├── PostgreSQL: keys, teams, budgets, spend, model configuration
+      │       ├── PostgreSQL: keys, teams, budgets, spend
       │       └── Langfuse OTEL callback: per-call telemetry
       │
       ├── OpenAI
@@ -66,13 +66,14 @@ LiteLLM production guidance: pin releases; treat **`LITELLM_SALT_KEY` as a perma
 
 ```bash
 cp .env.example .env
+# canonical template also at: infra/llm-gateway/.env.example
 ```
 
 Edit `.env`:
 
 1. Generate strong values for `LITELLM_MASTER_KEY`, `LITELLM_SALT_KEY`, and `POSTGRES_PASSWORD`.
 2. Set provider keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`, …).
-3. Set `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and `LANGFUSE_HOST` (Cloud host).
+3. Set `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and `LANGFUSE_HOST` (Cloud host; optional `LANGFUSE_OTEL_HOST`).
 
 > **Salt key:** generate once and store offline. Changing `LITELLM_SALT_KEY` later can make encrypted proxy data unreadable.
 
@@ -85,8 +86,11 @@ Or use `python scripts/generate_secrets.py`.
 
 ### 2. Start the stack
 
+Canonical Compose lives under `infra/llm-gateway/`. Root `docker-compose.yml` is a thin include shim:
+
 ```bash
 docker compose up -d
+# equivalent: docker compose -f infra/llm-gateway/compose.yaml up -d
 ```
 
 Services:
@@ -94,7 +98,7 @@ Services:
 | Service | Default | Role |
 | --- | --- | --- |
 | `litellm` | `http://localhost:4000` | OpenAI-compatible proxy + admin UI |
-| `postgres` | `localhost:5432` | Keys, teams, budgets, spend, config |
+| `postgres` | `localhost:5432` | Keys, teams, budgets, spend |
 
 Optional Redis (multi-replica / shared limits):
 
@@ -113,67 +117,105 @@ curl -s http://localhost:4000/v1/chat/completions \
   -H "Authorization: Bearer $LITELLM_MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-4o-mini",
+    "model": "llm-general",
     "messages": [{"role": "user", "content": "Say hello in one word."}]
   }'
 ```
 
 Prefer **virtual keys** (scoped, budgeted) for applications. Reserve the master key for administration.
 
-### 4. Point clients at the gateway
+### 4. Wire an app (base URL + virtual key only)
 
-**Python (OpenAI SDK):**
+**Full runbook:** [docs/llm-platform/app-wiring.md](docs/llm-platform/app-wiring.md)  
+**App env template:** [infra/llm-gateway/.env.app.example](infra/llm-gateway/.env.app.example)
+
+Apps need **only**:
+
+```env
+LITELLM_BASE_URL=http://localhost:4000/v1
+LITELLM_VIRTUAL_KEY=sk-...   # from: uv run llg keys create --models llm-general ...
+LITELLM_MODEL=llm-general    # optional
+```
+
+Do **not** put provider API keys or `LITELLM_MASTER_KEY` in the app.
+
+**Python (preferred — metadata + errors):**
+
+```python
+from llm_client import GatewayClient, GatewayConfig, RequestMetadata
+import uuid, os
+
+client = GatewayClient(GatewayConfig.from_env())
+model = os.environ.get("LITELLM_MODEL", "llm-general")
+meta = RequestMetadata(
+    request_id=str(uuid.uuid4()),
+    service="myapp",
+    feature="chat",
+    environment="development",
+    release="dev",
+    model_alias=model,
+)
+with client:
+    result = client.chat(
+        model=model,
+        messages=[{"role": "user", "content": "Hello"}],
+        metadata=meta,
+    )
+```
+
+**Python / TypeScript (OpenAI SDK):**
 
 ```python
 from openai import OpenAI
-
+import os
 client = OpenAI(
-    api_key="sk-...",  # LiteLLM virtual key
-    base_url="http://localhost:4000/v1",
+    api_key=os.environ["LITELLM_VIRTUAL_KEY"],
+    base_url=os.environ.get("LITELLM_BASE_URL", "http://localhost:4000/v1"),
 )
 ```
 
-**TypeScript:**
-
 ```ts
 import OpenAI from "openai";
-
 const client = new OpenAI({
-  apiKey: process.env.LITELLM_VIRTUAL_KEY,
-  baseURL: "http://localhost:4000/v1",
+  apiKey: process.env.LITELLM_VIRTUAL_KEY!,
+  baseURL: process.env.LITELLM_BASE_URL ?? "http://localhost:4000/v1",
 });
 ```
 
-See `examples/` for runnable snippets.
+Runnable samples: `examples/reference_workflow.py`, `examples/python_client.py`, `examples/ts_client.ts`.
 
 ## Configuration
 
 | Path | Purpose |
 | --- | --- |
-| `config/litellm_config.yaml` | Models, aliases, callbacks, router settings |
+| `infra/llm-gateway/litellm-config.yaml` | **Model registry SoT** — aliases, callbacks, router |
+| `infra/llm-gateway/compose.yaml` | Canonical LiteLLM + Postgres stack |
+| `infra/llm-gateway/compose.redis.yaml` | Optional Redis overlay |
 | `.env` | Secrets and runtime env (not committed) |
-| `docker-compose.yml` | LiteLLM + Postgres |
-| `docker-compose.redis.yml` | Optional Redis overlay |
+| `docker-compose.yml` | Thin root shim → infra compose |
+
+**YAML is the source of truth** for production model aliases. Compose defaults `STORE_MODEL_IN_DB=False`; Admin UI/DB model edits are not production alias authority. See [docs/llm-platform/architecture.md](docs/llm-platform/architecture.md).
 
 Model list entries reference provider keys via environment variables — never put raw API keys in YAML.
 
-Langfuse wiring uses LiteLLM’s success/failure callbacks and OTEL settings so each proxied call emits generation-level telemetry. Application code should still create Langfuse traces for retrieval, tools, agents, and session/user identity.
+Langfuse: the proxy exports each generation via the classic `langfuse` success/failure callback (see `infra/llm-gateway/litellm-config.yaml`). Application code should still create **app-level** Langfuse root traces for multi-step workflows (retrieval, tools, agents)—without dual-writing the same generation unless deliberate.
 
 ## Repository layout
 
 ```
 .
 ├── AGENTS.md                 # Instructions for coding agents
-├── config/
-│   └── litellm_config.yaml   # Proxy configuration
-├── docker-compose.yml
-├── docker-compose.redis.yml
+├── infra/llm-gateway/        # Canonical gateway stack + litellm-config.yaml
+├── docker-compose.yml        # Thin include shim
+├── docker-compose.redis.yml  # Thin include shim
+├── docs/llm-platform/        # Architecture, inventory
 ├── examples/
 │   ├── python_client.py
 │   └── ts_client.ts
 ├── scripts/
 │   ├── generate_secrets.py
-│   └── healthcheck.py
+│   ├── healthcheck.py
+│   └── validate_config.py
 ├── .github/workflows/ci.yml
 ├── pyproject.toml            # Python tooling
 └── package.json              # JS/TS examples & scripts
@@ -181,25 +223,22 @@ Langfuse wiring uses LiteLLM’s success/failure callbacks and OTEL settings so 
 
 ## Development tooling
 
-**Python:**
+**Python** ([uv](https://docs.astral.sh/uv/)):
 
 ```bash
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-# Unix:    source .venv/bin/activate
-pip install -e ".[dev]"
-ruff check .
-pytest
+uv sync --all-extras
+uv run ruff check .
+uv run pytest
 ```
 
-**Node (examples):**
+**Node / TypeScript** ([pnpm](https://pnpm.io/)):
 
 ```bash
-npm install
-npm run typecheck
+pnpm install
+pnpm typecheck
 ```
 
-**CI** (GitHub Actions) runs lint, Python tests, and Compose config validation on push/PR to `main`.
+**CI** (GitHub Actions) uses `uv` + `pnpm` lockfiles for lint, Python tests, typecheck, and Compose config validation on push/PR to `main`.
 
 ## Production checklist
 

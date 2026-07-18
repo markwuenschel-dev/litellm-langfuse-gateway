@@ -32,6 +32,7 @@ classifiers = [
 dependencies = [
   "pyyaml>=6.0",
   "httpx>=0.27",
+  "typer>=0.12",
 ]
 
 [project.optional-dependencies]
@@ -47,9 +48,10 @@ clients = [
 ]
 
 [project.scripts]
-llg-generate-secrets = "scripts.generate_secrets:main"
-llg-healthcheck = "scripts.healthcheck:main"
-llg-validate-config = "scripts.validate_config:main"
+llg = "llg.cli:run"
+llg-generate-secrets = "llg.generate_secrets:main"
+llg-healthcheck = "llg.healthcheck:main"
+llg-validate-config = "llg.validate_config:main"
 
 [project.urls]
 Homepage = "https://github.com/Nalakram/litellm-langfuse-gateway"
@@ -57,12 +59,16 @@ Documentation = "https://github.com/Nalakram/litellm-langfuse-gateway#readme"
 Issues = "https://github.com/Nalakram/litellm-langfuse-gateway/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["scripts"]
+packages = ["src/llg", "src/llm_client", "scripts"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/llg" = "llg"
+"src/llm_client" = "llm_client"
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-src = ["scripts", "examples", "tests"]
+src = ["src", "scripts", "examples", "tests"]
 
 [tool.ruff.lint]
 select = [
@@ -79,7 +85,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["scripts"]
+known-first-party = ["llg", "llm_client", "scripts"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -87,7 +93,7 @@ indent-style = "space"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = ["src", "."]
 addopts = "-q"
 
 [tool.mypy]
@@ -95,4 +101,5 @@ python_version = "3.11"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
-packages = ["scripts"]
+packages = ["llg", "llm_client", "scripts"]
+mypy_path = "src"
