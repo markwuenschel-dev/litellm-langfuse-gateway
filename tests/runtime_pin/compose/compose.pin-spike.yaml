@@ -1,0 +1,126 @@
+# Isolated dual-proxy + Redis + fake upstream stack for INT-001 pin spike.
+# Always run with a unique -p project name; do not use the production project name.
+#
+# Images for LiteLLM / Postgres / Redis match production digests from infra/llm-gateway.
+
+name: llg-pin-spike-placeholder
+
+services:
+  postgres:
+    image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
+    environment:
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: pin-spike-postgres
+      POSTGRES_DB: litellm
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm -d litellm"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    networks:
+      - pin_spike
+
+  redis:
+    image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
+    command: ["redis-server", "--requirepass", "pin-spike-redis"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "pin-spike-redis", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 3s
+    networks:
+      - pin_spike
+
+  fake-upstream:
+    build:
+      context: ./fake_upstream
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')\" || exit 1",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+      start_period: 2s
+    networks:
+      - pin_spike
+
+  litellm-a:
+    image: ghcr.io/berriai/litellm:v1.92.0@sha256:9ef6f45bc0104940571765e610c52a1d761b5ec85efcd193795281086ee61277
+    ports:
+      - "${PIN_SPIKE_PORT_A:-14001}:4000"
+    volumes:
+      - ./litellm-config.pin-spike.yaml:/app/config.yaml:ro
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
+    environment:
+      LITELLM_MASTER_KEY: sk-pin-spike-master
+      LITELLM_SALT_KEY: sk-pin-spike-salt-fixed-for-tests-only
+      DATABASE_URL: postgresql://litellm:pin-spike-postgres@postgres:5432/litellm
+      STORE_MODEL_IN_DB: "False"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: pin-spike-redis
+      OPENAI_API_KEY: sk-pin-spike-fake
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      fake-upstream:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness')\" || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 50s
+    networks:
+      - pin_spike
+
+  litellm-b:
+    image: ghcr.io/berriai/litellm:v1.92.0@sha256:9ef6f45bc0104940571765e610c52a1d761b5ec85efcd193795281086ee61277
+    ports:
+      - "${PIN_SPIKE_PORT_B:-14002}:4000"
+    volumes:
+      - ./litellm-config.pin-spike.yaml:/app/config.yaml:ro
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
+    environment:
+      LITELLM_MASTER_KEY: sk-pin-spike-master
+      LITELLM_SALT_KEY: sk-pin-spike-salt-fixed-for-tests-only
+      DATABASE_URL: postgresql://litellm:pin-spike-postgres@postgres:5432/litellm
+      STORE_MODEL_IN_DB: "False"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: pin-spike-redis
+      OPENAI_API_KEY: sk-pin-spike-fake
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      fake-upstream:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness')\" || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 50s
+    networks:
+      - pin_spike
+
+networks:
+  pin_spike:
+    driver: bridge

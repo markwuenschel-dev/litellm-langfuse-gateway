@@ -22,6 +22,12 @@ Runtime and hermetic proof for the LiteLLM + Langfuse gateway milestone.
 | [`templates/cost-recon.md`](./templates/cost-recon.md) | Provider vs LiteLLM vs Langfuse |
 | [`templates/failure-run.md`](./templates/failure-run.md) | Outage / ACL / budget live runs |
 
+## Pin-compatibility spikes (Docker, not `LLG_LIVE`)
+
+| Spike | Harness | Claim status |
+| --- | --- | --- |
+| INT-001 Redis control-state | `tests/runtime_pin/` (`LLG_PIN_SPIKE=1`) | **Claim-neutral** until green evidence → product PR; see [`spikes/2026-07-19-int-001-redis-pin-compat.md`](./spikes/2026-07-19-int-001-redis-pin-compat.md) |
+
 ## Unproven without `LLG_LIVE` / credentials (matrix)
 
 | Capability | Hermetic (CI) | Live required | Evidence path when done |
