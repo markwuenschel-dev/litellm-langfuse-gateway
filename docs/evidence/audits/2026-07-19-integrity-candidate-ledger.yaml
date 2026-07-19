@@ -56,7 +56,7 @@ candidates:
 
   - candidate_id: INT-002
     title: Triple alias authority without compile/render seam
-    status: needs-human-decision
+    status: shipped
     category: Architecture Fitness
     lane_sources: [deepening_seams, blast_radius]
     summary: >
@@ -173,7 +173,7 @@ candidates:
 
   - candidate_id: INT-006
     title: Environment YAML contracts not loaded by runtime or CI
-    status: needs-human-decision
+    status: shipped
     category: Architecture Fitness
     lane_sources: [deepening_seams, graded_integrity]
     summary: environments/*.yaml unbound; paper production posture.
@@ -379,4 +379,4 @@ rejected_out_of_scope:
   - Deep audit of leave-sprint / Realmwalkers / IBKR trees (external; report only contracts)
   - Implementing INT-037b seat isolation in ibkr (different repo; user deferred)
 
-next_loop_state: remaining-human-decisions-int-002-006
+next_loop_state: ledger-exhausted

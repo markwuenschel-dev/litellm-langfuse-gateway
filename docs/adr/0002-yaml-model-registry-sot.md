@@ -21,5 +21,4 @@ between YAML and UI creates split-brain aliases for apps that expect stable name
 
 - Alias changes are code review + validate, not runtime UI edits.
 - Flipping SoT to DB/UI requires an explicit ADR and migration plan.
-- Triple write surface (`STABLE_ALIASES` frozenset in validate_config) remains a
-  known integrity follow-up (INT-002) until a single compile/render seam lands.
+- Stable alias *set* is derived from `model-aliases.yaml` (INT-002 / ADR 0006), not a third hardcoded list.

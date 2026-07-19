@@ -1,7 +1,9 @@
-# Non-secret environment contract — production
+# Docs-only ops checklist — production (INT-006)
+# NOT loaded by runtime LiteLLM, llg, or CI as an enforceable contract.
 # Secrets (keys, passwords, salt) live in a secret manager only — never in git.
 # LITELLM_SALT_KEY: permanent; escrow offline; see incident-recovery.md
 # See: infra/llm-gateway/.env.example, docs/llm-platform/incident-recovery.md
+# ADR: docs/adr/0005-environments-yaml-docs-only.md
 
 environment: production
 

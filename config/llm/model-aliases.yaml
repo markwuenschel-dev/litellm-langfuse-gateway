@@ -1,10 +1,12 @@
 # Application-facing stable model alias contract (WP6 + WP7).
 #
-# Authority chain:
-#   1. This file defines the semantic aliases apps and smokes must use.
+# Authority chain (ADR 0006 / INT-002):
+#   1. This file is the semantic *write* SoT — keys under aliases: are the
+#      stable app-facing set (load_stable_aliases() derives the check set).
 #   2. infra/llm-gateway/litellm-config.yaml is the runtime model_list SoT
 #      (must expose every alias here with matching litellm_model + env key).
 #   3. Admin UI / DB model edits are NOT production alias authority.
+#   4. There is no third hardcoded STABLE_ALIASES list.
 #
 # Rules:
 #   - Only aliases with consumers (see consumers below). Do not invent unused names.

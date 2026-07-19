@@ -1,6 +1,8 @@
-# Non-secret environment contract — development
+# Docs-only ops checklist — development (INT-006)
+# NOT loaded by runtime LiteLLM, llg, or CI as an enforceable contract.
 # Secrets (keys, passwords, salt) live in .env / a secret manager only.
 # See: infra/llm-gateway/.env.example, docs/llm-platform/incident-recovery.md
+# ADR: docs/adr/0005-environments-yaml-docs-only.md
 
 environment: development
 
