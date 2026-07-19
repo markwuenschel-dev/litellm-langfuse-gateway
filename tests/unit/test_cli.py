@@ -70,6 +70,17 @@ def test_health_help() -> None:
     assert "--path" in out or "path" in out.lower()
 
 
+def test_up_help_redis_service_not_legacy_redis() -> None:
+    """Downgrade: --redis-service only; no ambiguous --redis shared-limit flag."""
+    result = runner.invoke(app, ["up", "--help"])
+    assert result.exit_code == 0
+    out = _plain(result.stdout)
+    assert "--redis-service" in out
+    # Strip the long option so a bare --redis cannot hide inside it
+    without_long = out.replace("--redis-service", "")
+    assert "--redis" not in without_long
+
+
 def test_smoke_skips_without_llg_live(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.delenv("LLG_LIVE", raising=False)
     result = runner.invoke(app, ["smoke", "--alias", "llm-general"])

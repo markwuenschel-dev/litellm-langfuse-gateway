@@ -68,7 +68,7 @@ Aligned with LiteLLM production guidance for the pin; see also
 | `LITELLM_MODE` | `PRODUCTION` in staging/prod env contracts | Set in runtime env / staging overlay |
 | `STORE_MODEL_IN_DB` | `False` | YAML SoT |
 | Fallbacks | Disabled | Semantic risk; WP13 matrix |
-| Redis | Overlay when replicas > 1 | Prefer `REDIS_HOST` / `PORT` / `PASSWORD` |
+| Redis | Optional service overlay only (`--redis-service`); no shared-limit claim on current pin | Container auth: `REDIS_PASSWORD` |
 | `proxy_batch_write_at` | **Guidance: 60** in production env contract | Enable in `litellm_settings` only after measuring spend write load on the pin; not forced in YAML yet to avoid untested behavior |
 | Pool limits | Pin-dependent | Set via LiteLLM DB pool env when scaling write QPS |
 

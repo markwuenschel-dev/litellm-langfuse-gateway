@@ -8,8 +8,9 @@
 # From repo root (thin shim):
 #   docker compose up -d
 #
-# With Redis (multi-replica / distributed limits):
+# With Redis *service* only (no shared-limit claim on this pin):
 #   docker compose -f compose.yaml -f compose.redis.yaml up -d
+#   # or: uv run llg up --redis-service
 #   # or from root: docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d
 #
 # Model registry authority: litellm-config.yaml (YAML SoT).

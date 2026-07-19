@@ -18,9 +18,9 @@ def _docker_compose_cmd() -> list[str]:
     return ["docker", "compose"]
 
 
-def _compose_files(redis: bool = False) -> list[Path]:
+def _compose_files(redis_service: bool = False) -> list[Path]:
     files = [COMPOSE_FILE]
-    if redis:
+    if redis_service:
         files.append(COMPOSE_REDIS_FILE)
     for path in files:
         if not path.is_file():
@@ -30,12 +30,12 @@ def _compose_files(redis: bool = False) -> list[Path]:
 
 def run_compose(
     *compose_args: str,
-    redis: bool = False,
+    redis_service: bool = False,
     check: bool = True,
 ) -> int:
     """Run `docker compose -f ... <args>` with project dir = gateway infra."""
     cmd = _docker_compose_cmd()
-    for path in _compose_files(redis=redis):
+    for path in _compose_files(redis_service=redis_service):
         cmd.extend(["-f", str(path)])
     cmd.extend(compose_args)
 
@@ -46,15 +46,15 @@ def run_compose(
     return result.returncode
 
 
-def compose_up(*, redis: bool = False, detach: bool = True) -> int:
+def compose_up(*, redis_service: bool = False, detach: bool = True) -> int:
     args = ["up"]
     if detach:
         args.append("-d")
-    return run_compose(*args, redis=redis)
+    return run_compose(*args, redis_service=redis_service)
 
 
-def compose_down(*, redis: bool = False, volumes: bool = False) -> int:
+def compose_down(*, redis_service: bool = False, volumes: bool = False) -> int:
     args = ["down"]
     if volumes:
         args.append("-v")
-    return run_compose(*args, redis=redis)
+    return run_compose(*args, redis_service=redis_service)

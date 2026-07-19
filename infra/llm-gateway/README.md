@@ -2,14 +2,14 @@
 
 Canonical **LiteLLM Proxy + PostgreSQL** Compose stack for this repository.
 
-Langfuse stays **Cloud** (set `LANGFUSE_*` in `.env`). Redis is optional via `compose.redis.yaml`.
+Langfuse stays **Cloud** (set `LANGFUSE_*` in `.env`). Redis is an optional **service** via `compose.redis.yaml` / `llg up --redis-service` — container only; **no** shared-limit claim on the current LiteLLM pin.
 
 ## Layout
 
 | File | Role |
 | --- | --- |
 | `compose.yaml` | LiteLLM + Postgres (canonical) |
-| `compose.redis.yaml` | Optional Redis overlay |
+| `compose.redis.yaml` | Optional Redis *service* overlay (no LiteLLM REDIS_* injection) |
 | `litellm-config.yaml` | **Model registry SoT** (aliases, callbacks, router) |
 | `.env.example` | Env template for **proxy** (copy to `.env`) |
 | `.env.app.example` | Env template for **apps** (base URL + virtual key only) |
@@ -51,7 +51,7 @@ uv run llg --help
 uv run llg secrets generate          # paste into .env (store salt offline)
 uv run llg config validate           # model_list / no literal secrets
 uv run llg up                        # docker compose -f infra/llm-gateway/compose.yaml up -d
-uv run llg up --redis                # + compose.redis.yaml overlay
+uv run llg up --redis-service        # + Redis container only (no shared-limit claim)
 uv run llg health                    # /health/liveliness
 uv run llg health --path /health/readiness   # Postgres-backed readiness
 uv run llg down
@@ -102,8 +102,8 @@ cp .env.example .env
 uv run llg up
 # equivalent: docker compose -f compose.yaml up -d
 
-# Optional Redis
-uv run llg up --redis
+# Optional Redis container (service only — not shared Router / virtual-key limits)
+uv run llg up --redis-service
 # equivalent: docker compose -f compose.yaml -f compose.redis.yaml up -d
 ```
 
@@ -119,7 +119,7 @@ docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d
 | --- | --- | --- |
 | `litellm` | `http://localhost:4000` | OpenAI-compatible proxy + admin UI |
 | `postgres` | `localhost:5432` | Keys, teams, budgets, spend |
-| `redis` | `localhost:6379` | Optional shared limits / routing state |
+| `redis` | `localhost:6379` | Optional service only; **not** wired for shared limits on this pin |
 
 ## Validate
 

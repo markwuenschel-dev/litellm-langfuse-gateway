@@ -74,13 +74,20 @@ litellm_settings:
   success_callback: ["langfuse"]
   failure_callback: ["langfuse"]
 
-  # Uncomment when Redis is available (multi-replica / shared cache)
+  # Redis response cache / control-state: NOT enabled on this pin.
+  # `llg up --redis-service` starts a Redis container only — it does not wire
+  # these blocks. Pin v1.92.0 was characterized as silent-degrade on Redis loss
+  # when control-state was enabled (see docs/evidence/spikes/2026-07-19-int-001-*).
+  # Do not uncomment for "shared limits" without fail-closed evidence or an
+  # approved gateway-policy design. Prefer router_settings.redis_* + control-state
+  # cache (supported_call_types: []) over general_settings alone if reopening later.
   # cache: true
   # cache_params:
   #   type: redis
   #   host: os.environ/REDIS_HOST
   #   port: os.environ/REDIS_PORT
   #   password: os.environ/REDIS_PASSWORD
+  #   supported_call_types: []
 
 general_settings:
   # Master key and DATABASE_URL are typically injected via environment:
@@ -92,7 +99,8 @@ general_settings:
   # aliases without an ADR that flips SoT from this file to the Admin UI/DB.
   # store_model_in_db: false  # also enforced via STORE_MODEL_IN_DB=False in compose
 
-  # Redis for multi-instance rpm/tpm and routing state (prefer host/port/password)
+  # general_settings redis_* is not the primary multi-instance RPM path; prefer
+  # router_settings when a future fail-closed topology is approved. Left off.
   # redis_host: os.environ/REDIS_HOST
   # redis_port: os.environ/REDIS_PORT
   # redis_password: os.environ/REDIS_PASSWORD

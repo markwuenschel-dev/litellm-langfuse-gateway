@@ -58,7 +58,7 @@ Applications and agents
 ```
 infra/llm-gateway/
   compose.yaml           # LiteLLM + Postgres (canonical)
-  compose.redis.yaml     # Optional Redis overlay
+  compose.redis.yaml     # Optional Redis *service* (no shared-limit claim)
   litellm-config.yaml    # Model registry + callbacks (YAML SoT)
   .env.example           # Proxy secret/env template (no real secrets)
   .env.app.example       # App-only env (base URL + virtual key)
@@ -97,7 +97,7 @@ Values never go in git or model YAML. See `infra/llm-gateway/.env.example` and `
 | LiteLLM Proxy | Self-hosted (Compose under `infra/llm-gateway/`) |
 | PostgreSQL | Required for production proxy features |
 | Langfuse | Cloud by default (not self-hosted unless residency/reg/cost force it) |
-| Redis | Optional until multi-replica or shared rpm/tpm / routing state |
+| Redis | Optional service only; shared rpm/tpm **not** claimed on current pin (see INT-001 spike) |
 
 ## Client contract
 

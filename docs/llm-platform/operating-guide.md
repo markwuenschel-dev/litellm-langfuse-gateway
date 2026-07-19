@@ -12,7 +12,7 @@ Day-2 operations for the LiteLLM + Langfuse gateway. Canonical stack: `infra/llm
 | 4 | `request_timeout: 600` | `litellm_settings.request_timeout` + env YAMLs | Configured |
 | 5 | `num_workers: 1`; scale out replicas | `compose.yaml` command; k8s sketch | Configured |
 | 6 | `proxy_batch_write_at` / DB write batching | Notes in `production.yaml` + `upgrade-notes.md` (enable when pin supports / load needs) | Guidance only until live-tuned |
-| 7 | Redis when replicas > 1 (`redis_host` / `port` / `password`, not sole `redis_url`) | `compose.redis.yaml`, config comments | Optional path configured |
+| 7 | Redis service optional; **no** shared-limit topology on current pin | `compose.redis.yaml` (service only); spike evidence | Service overlay only; distributed controls **not** claimed |
 | 8 | Salt + master in secret manager; salt offline escrow | `incident-recovery.md` | Process documented; escrow **ops-owned** |
 | 9 | Admin UI not public without SSO / network control | `production.yaml` `admin_ui.public: false` | Policy; network enforcement **unproven** here |
 | 10 | Postgres backups + restore drill | `incident-recovery.md` | Documented; drill **unproven** without live DB |

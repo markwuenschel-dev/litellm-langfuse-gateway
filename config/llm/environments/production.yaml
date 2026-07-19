@@ -17,8 +17,8 @@ set_verbose: false
 request_timeout: 600
 health_timeout: 10
 
-# Multi-replica / shared rate limits: Redis is mandatory in production layouts
-# that scale beyond one proxy instance
+# Historical contract flag (unbound by runtime). Redis *service* may be ops-side;
+# shared LiteLLM control-state is NOT claimed on the current pin (INT-001).
 redis_required: true
 
 postgres_required: true
