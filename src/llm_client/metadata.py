@@ -1,7 +1,14 @@
 """Validate and serialize request metadata against the bounded contract.
 
-Schema SoT: ``config/llm/metadata-contract.schema.json``.
-This module enforces the same rules in pure Python (no jsonschema runtime dep).
+Structural SoT (fields, types, required, maxLength, enums, integer bounds):
+``config/llm/metadata-contract.schema.json``.
+
+Runtime enforcement SoT is this pure-Python module (no jsonschema dependency).
+It mirrors schema structure and **adds** secret/forbidden-key checks that the
+JSON Schema document only describes in prose (not as formal patterns).
+
+Parity of structural constraints is asserted in
+``tests/unit/test_metadata_schema_parity.py``.
 """
 
 from __future__ import annotations
@@ -21,6 +28,9 @@ __all__ = [
     "REQUIRED_FIELDS",
     "OPTIONAL_FIELDS",
     "ALLOWED_FIELDS",
+    "MAX_STRING_LEN",
+    "RETRY_ATTEMPT_MIN",
+    "RETRY_ATTEMPT_MAX",
     "UNATTRIBUTED_SERVICE",
     "RequestMetadata",
     "schema_path",
@@ -83,7 +93,11 @@ _SECRET_VALUE_PATTERNS = (
 )
 
 _STRING_FIELDS = ALLOWED_FIELDS - {"retry_attempt", "fallback_used"}
-_MAX_STRING_LEN = 128
+# Mirrors schema maxLength on bounded string properties (and blanket cap in Python).
+MAX_STRING_LEN = 128
+_MAX_STRING_LEN = MAX_STRING_LEN  # private alias used below
+RETRY_ATTEMPT_MIN = 0
+RETRY_ATTEMPT_MAX = 100
 
 
 def schema_path() -> Path:
@@ -192,8 +206,11 @@ def validate_metadata(data: Mapping[str, Any], *, require_trace_id: bool = False
         if key == "retry_attempt":
             if isinstance(value, bool) or not isinstance(value, int):
                 raise MetadataValidationError("metadata.retry_attempt must be an integer")
-            if value < 0 or value > 100:
-                raise MetadataValidationError("metadata.retry_attempt must be between 0 and 100")
+            if value < RETRY_ATTEMPT_MIN or value > RETRY_ATTEMPT_MAX:
+                raise MetadataValidationError(
+                    f"metadata.retry_attempt must be between "
+                    f"{RETRY_ATTEMPT_MIN} and {RETRY_ATTEMPT_MAX}"
+                )
             out[key] = value
             continue
 

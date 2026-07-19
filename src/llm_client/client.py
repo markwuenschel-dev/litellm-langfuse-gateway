@@ -200,6 +200,12 @@ class GatewayClient:
         shows *something*. Set ``LLG_REQUIRE_ATTRIBUTION=1`` (or pass
         ``require_attribution=True``) to refuse calls without a real service name.
 
+        **model_alias echo:** the request body always has
+        ``metadata.model_alias == model`` (stripped). If the caller supplies
+        metadata with a divergent ``model_alias``, it is coerced to match
+        ``model`` rather than rejected — schema describes ``model_alias`` as
+        an echo of the model field; this client never sends a divergent value.
+
         Returns the parsed JSON body (OpenAI-compatible).
         """
         if not model or not str(model).strip():
@@ -207,19 +213,22 @@ class GatewayClient:
         if not messages:
             raise GatewayConfigError("messages must be a non-empty sequence")
 
+        model_str = str(model).strip()
+
         if metadata is None:
-            meta_obj = RequestMetadata.from_env(model_alias=str(model).strip())
+            meta_obj = RequestMetadata.from_env(model_alias=model_str)
         elif isinstance(metadata, RequestMetadata):
             meta_obj = metadata
         else:
             meta_obj = RequestMetadata.from_mapping(metadata, require_trace_id=require_trace_id)
 
-        # Cross-check model_alias when caller provided metadata with a different alias.
-        if meta_obj.model_alias != str(model).strip():
+        # Always echo: metadata.model_alias must equal the request model field.
+        # Coerce mismatched caller-supplied aliases (never send a divergent value).
+        if meta_obj.model_alias != model_str:
             meta_obj = RequestMetadata.from_mapping(
                 {
                     **meta_obj.to_dict(require_trace_id=require_trace_id),
-                    "model_alias": str(model).strip(),
+                    "model_alias": model_str,
                 },
                 require_trace_id=require_trace_id,
             )
