@@ -1,0 +1,105 @@
+# Opt-in live integration against a reachable gateway.
+#
+# CRITICAL:
+# - workflow_dispatch ONLY (never push / pull_request / schedule by default)
+# - burns provider spend and requires real secrets
+# - does not start the gateway stack; LITELLM_BASE_URL must point at a live proxy
+# - default CI (ci.yml) stays hermetic and never sets LLG_LIVE
+#
+# See docs/evidence/README.md and docs/evidence/failure-matrix.md.
+
+name: Live smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      pytest_args:
+        description: "Extra pytest args (optional)"
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: live-smoke
+  cancel-in-progress: false
+
+jobs:
+  live-integration:
+    name: Live integration (opt-in, costs money)
+    runs-on: ubuntu-latest
+    # Optional GitHub Environment for required reviewers / secret scoping.
+    # Create "live-smoke" under Settings → Environments if you want protection rules.
+    environment: live-smoke
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Sync dependencies (all extras, locked)
+        run: uv sync --all-extras --frozen
+
+      - name: Require live secrets
+        env:
+          LITELLM_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
+          LITELLM_VIRTUAL_KEY: ${{ secrets.LITELLM_VIRTUAL_KEY }}
+          LITELLM_MASTER_KEY: ${{ secrets.LITELLM_MASTER_KEY }}
+        run: |
+          set -euo pipefail
+          missing=0
+          # Never print secret values — only presence.
+          if [[ -z "${LITELLM_BASE_URL:-}" ]]; then
+            echo "::error::LITELLM_BASE_URL secret is not set."
+            echo "Point it at a reachable gateway (with or without /v1)."
+            missing=1
+          fi
+          if [[ -z "${LITELLM_VIRTUAL_KEY:-}" ]]; then
+            echo "::error::LITELLM_VIRTUAL_KEY secret is not set."
+            echo "Provision a virtual key (sk-…) — never the master key for app traffic."
+            missing=1
+          fi
+          # Master is required for budget/ACL key-create tests; fail closed so the
+          # suite is not a partial green that skips the control-plane checks.
+          if [[ -z "${LITELLM_MASTER_KEY:-}" ]]; then
+            echo "::error::LITELLM_MASTER_KEY secret is not set."
+            echo "Required for live budget/ACL key provisioning (admin only)."
+            missing=1
+          fi
+          if [[ "$missing" -ne 0 ]]; then
+            echo ""
+            echo "This workflow is opt-in and costs provider money."
+            echo "Configure secrets on the 'live-smoke' GitHub Environment (or repo secrets),"
+            echo "then re-run via Actions → Live smoke → Run workflow."
+            echo "Docs: docs/evidence/README.md"
+            exit 1
+          fi
+          echo "Required live secrets are present (values not shown)."
+
+      - name: Run live-gated integration tests
+        env:
+          LLG_LIVE: "1"
+          # Chaos tests stay skipped unless operators set these intentionally.
+          # Do not enable LLG_CHAOS_* here — they require induced outages.
+          LITELLM_BASE_URL: ${{ secrets.LITELLM_BASE_URL }}
+          LITELLM_VIRTUAL_KEY: ${{ secrets.LITELLM_VIRTUAL_KEY }}
+          LITELLM_MASTER_KEY: ${{ secrets.LITELLM_MASTER_KEY }}
+        run: |
+          set -euo pipefail
+          # Narrow subset: LLG_LIVE-gated integration only (not compose env-origin).
+          # Chaos rows skip unless LLG_CHAOS_POSTGRES / LLG_CHAOS_LANGFUSE are set.
+          uv run pytest \
+            tests/integration/test_gateway_health.py \
+            tests/integration/test_virtual_key_access.py \
+            tests/integration/test_failure_modes_live.py \
+            tests/integration/test_langfuse_export.py \
+            tests/integration/test_trace_grouping.py \
+            -q --tb=short \
+            ${{ inputs.pytest_args }}
