@@ -44,6 +44,19 @@ _CONFIG_PATH_ARG = typer.Argument(
     None,
     help=f"Path to litellm config YAML (default: {DEFAULT_CONFIG})",
 )
+_RECONCILE_RUN_FILE = typer.Option(
+    None,
+    "--run-file",
+    help="Path to YAML reconciliation run artifact (machine input). No network I/O.",
+    exists=False,
+    dir_okay=False,
+    readable=True,
+)
+_RECONCILE_JSON = typer.Option(
+    False,
+    "--json",
+    help="Emit exactly one structured result/error object on stdout (diagnostics on stderr).",
+)
 
 
 def _version_callback(value: bool) -> None:
@@ -500,46 +513,69 @@ def smoke(
 
 @app.command("reconcile-cost")
 def reconcile_cost(
-    run_id: str = typer.Option(
-        None,
-        "--run-id",
-        help="Optional run id for evidence file naming (does not load remote data).",
-    ),
+    run_file: Path | None = _RECONCILE_RUN_FILE,
+    as_json: bool = _RECONCILE_JSON,
 ) -> None:
-    """Explain cost reconciliation; does not invent numbers without live data.
+    """File-backed cost reconciliation (INT-116 / S1′).
 
-    Full process: docs/llm-platform/cost-reconciliation.md
-    Evidence template: docs/evidence/templates/cost-recon.md
+    Without --run-file: print process guide and exit 2 (incomplete).
+
+    With --run-file: validate YAML + run pure engine (no LLG_LIVE required).
+    Exit 0 = complete + within tolerance; 1 = complete + outside; 2 = incomplete/invalid.
+
+    Process: docs/llm-platform/cost-reconciliation.md
+    Human template (not parser input): docs/evidence/templates/cost-recon.md
     """
-    rid = run_id or "(none)"
-    typer.echo("llg reconcile-cost — process guide (WP15)")
-    typer.echo(f"run_id={rid}")
-    typer.echo("")
-    typer.echo(
-        "Cost reconciliation requires provider billing, LiteLLM spend, and Langfuse "
-        "observation costs for a fixed prompt set."
-    )
-    typer.echo("Tolerance proposal: ±5% or ±$0.01 per call group (whichever larger).")
-    typer.echo("")
-    typer.echo("See: docs/llm-platform/cost-reconciliation.md")
-    typer.echo("Evidence template: docs/evidence/templates/cost-recon.md")
-    # Exit non-zero until automated fetch exists — DoD #15 cannot be "green" from a stub.
-    if os.environ.get("LLG_LIVE") != "1":
+    from llg.reconcile_cost import LoadError, format_human, format_json, load_run, reconcile
+
+    if run_file is None:
+        typer.echo("llg reconcile-cost — process guide (INT-116 / S1′)")
+        typer.echo("")
+        typer.echo(
+            "Machine input: YAML run file with provider + litellm + langfuse amounts "
+            "(Decimal strings), equal UTC half-open periods, retained evidence_ref per source."
+        )
+        typer.echo("Usage:")
+        typer.echo("  uv run llg reconcile-cost --run-file path/to/run.yaml")
+        typer.echo("  uv run llg reconcile-cost --run-file path/to/run.yaml --json")
+        typer.echo("")
+        typer.echo("See: docs/llm-platform/cost-reconciliation.md")
+        typer.echo("Evidence template (human narrative): docs/evidence/templates/cost-recon.md")
         typer.secho(
-            "UNPROVEN: LLG_LIVE is not set. No live spend data was fetched. "
-            "This command does not fabricate reconciliation tables. Exit 2.",
+            "INCOMPLETE: no --run-file. This command does not invent numbers. Exit 2.",
             fg=typer.colors.YELLOW,
             err=True,
         )
         raise typer.Exit(2)
-    typer.secho(
-        "UNPROVEN: LLG_LIVE=1 is set, but automated multi-system fetch is not implemented. "
-        "Capture provider / LiteLLM / Langfuse figures manually and fill "
-        "docs/evidence/templates/cost-recon.md. Exit 2.",
-        fg=typer.colors.YELLOW,
-        err=True,
-    )
-    raise typer.Exit(2)
+
+    try:
+        run = load_run(run_file)
+        result = reconcile(run)
+    except LoadError as exc:
+        if as_json:
+            payload = {
+                "ok": False,
+                "error": str(exc),
+                "reason_code": exc.code,
+                "exit_code": 2,
+            }
+            typer.echo(json.dumps(payload, indent=2, sort_keys=True))
+            typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        else:
+            typer.secho(f"INVALID run file: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2) from exc
+
+    if as_json:
+        typer.echo(format_json(result), nl=False)
+        if result.exit_code != 0:
+            typer.secho(
+                f"reconcile-cost reason={result.reason_code} exit={result.exit_code}",
+                fg=typer.colors.YELLOW if result.exit_code == 1 else typer.colors.RED,
+                err=True,
+            )
+    else:
+        typer.echo(format_human(result), nl=False)
+    raise typer.Exit(result.exit_code)
 
 
 @keys_app.command("revoke")

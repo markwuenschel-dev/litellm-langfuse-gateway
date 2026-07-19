@@ -479,7 +479,7 @@ candidates:
 
   - candidate_id: INT-116
     title: reconcile-cost multi-system fetch never implemented (DoD 15)
-    status: needs-human-decision
+    status: shipped
     category: Architecture Fitness
     lane_sources: [graded_integrity, verification_readiness]
     summary: Honest exit 2; process-only; no billing fetch.

@@ -1,27 +1,49 @@
-# Template: cost reconciliation
+# Template: cost reconciliation (human narrative)
 
-```yaml
-run_id: ""
-date: ""
-aliases: []
-n_calls_per_alias: 0
-tolerance: "±5% or ±$0.01 (larger)"
-result: pass|fail|unproven
+**Not machine input.** The engine reads a **YAML run file** only. Use this Markdown as an optional companion for interpretation, anomalies, and remediation after:
+
+```bash
+uv run llg reconcile-cost --run-file path/to/run.yaml
+# optional: --json
 ```
 
-## Table
+```yaml
+# Companion metadata (copy from the YAML run)
+run_id: ""
+date: ""
+yaml_run_file: ""
+currency: USD
+tolerance: "relative 0.05 / absolute 0.01 (DOC′)"
+cli_exit_code: 0|1|2
+result: within|outside|incomplete|unproven
+```
 
-| Alias | Provider $ | LiteLLM $ | Langfuse $ | Δ max | Within tol? |
+## Table (from CLI pair reports)
+
+| Alias / group | comparison_scope_id | Provider $ | LiteLLM $ | Langfuse $ | All pairs within? |
 | --- | --- | --- | --- | --- | --- |
 | | | | | | |
 
-## Known deltas
+## Pair diagnostics
+
+| Group | Pair | Diff | Limit | Within? |
+| --- | --- | --- | --- | --- |
+| | provider↔litellm | | | |
+| | litellm↔langfuse | | | |
+| | provider↔langfuse | | | |
+
+## Known deltas / anomalies
 
 -
 
-## Command
+## Evidence retained (immutable)
 
-```bash
-uv run llg reconcile-cost --run-id <run_id>
-# Then fill this file from dashboards/APIs — CLI does not invent numbers.
-```
+| Role | source_id | evidence_ref | collected_at |
+| --- | --- | --- | --- |
+| provider | | | |
+| litellm | | | |
+| langfuse | | | |
+
+## Remediation
+
+-

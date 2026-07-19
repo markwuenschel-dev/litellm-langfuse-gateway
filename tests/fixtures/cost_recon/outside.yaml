@@ -1,0 +1,42 @@
+schema_version: 1
+run_id: fixture-outside-2026-07-19
+currency: USD
+tolerance:
+  relative: "0.05"
+  absolute: "0.01"
+required_source_roles:
+  - provider
+  - litellm
+  - langfuse
+groups:
+  - id: llm-general
+    comparison_scope_id: scope-llm-general-drift-fixture
+    inclusion_basis: "alias=llm-general; synthetic large drift fixture"
+    sources:
+      - source_role: provider
+        source_id: openai-billing-export
+        amount: "1.00"
+        period:
+          start: "2026-07-19T00:00:00Z"
+          end: "2026-07-19T01:00:00Z"
+        collected_at: "2026-07-19T12:00:00Z"
+        evidence_ref: "docs/evidence/exports/fixture-openai-out.csv"
+        provenance: export
+      - source_role: litellm
+        source_id: litellm-spend-export
+        amount: "0.50"
+        period:
+          start: "2026-07-19T00:00:00Z"
+          end: "2026-07-19T01:00:00Z"
+        collected_at: "2026-07-19T12:05:00Z"
+        evidence_ref: "docs/evidence/exports/fixture-litellm-out.json"
+        provenance: export
+      - source_role: langfuse
+        source_id: langfuse-obs-export
+        amount: "0.50"
+        period:
+          start: "2026-07-19T00:00:00Z"
+          end: "2026-07-19T01:00:00Z"
+        collected_at: "2026-07-19T12:10:00Z"
+        evidence_ref: "docs/evidence/exports/fixture-langfuse-out.json"
+        provenance: export
