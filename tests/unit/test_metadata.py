@@ -7,7 +7,12 @@ import uuid
 import pytest
 
 from llm_client.errors import MetadataValidationError
-from llm_client.metadata import RequestMetadata, load_schema, validate_metadata
+from llm_client.metadata import (
+    UNATTRIBUTED_SERVICE,
+    RequestMetadata,
+    load_schema,
+    validate_metadata,
+)
 
 
 def _valid(**overrides: object) -> dict[str, object]:
@@ -27,6 +32,23 @@ def test_validate_accepts_required_fields() -> None:
     out = validate_metadata(_valid())
     assert out["service"] == "reference-app"
     assert out["model_alias"] == "llm-general"
+
+
+def test_from_env_defaults_unattributed(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key in (
+        "SERVICE_NAME",
+        "LLG_SERVICE",
+        "FEATURE_NAME",
+        "ENVIRONMENT",
+        "GIT_SHA",
+        "RELEASE",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    meta = RequestMetadata.from_env(model_alias="llm-general")
+    assert meta.service == UNATTRIBUTED_SERVICE
+    assert meta.is_unattributed
+    assert meta.model_alias == "llm-general"
+    assert meta.feature == "chat"
 
 
 def test_validate_accepts_optional_fields() -> None:

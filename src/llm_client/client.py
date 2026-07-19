@@ -16,7 +16,7 @@ from llm_client.errors import (
     GatewayUnavailable,
     error_from_response,
 )
-from llm_client.metadata import RequestMetadata, metadata_to_dict
+from llm_client.metadata import RequestMetadata
 
 __all__ = [
     "GatewayConfig",
@@ -190,8 +190,15 @@ class GatewayClient:
         max_tokens: int | None = None,
         extra_body: Mapping[str, Any] | None = None,
         require_trace_id: bool = False,
+        require_attribution: bool | None = None,
     ) -> dict[str, Any]:
-        """Call chat completions; attach validated metadata when provided.
+        """Call chat completions; always attach validated origin metadata.
+
+        If ``metadata`` is omitted, builds fields from env via
+        :meth:`RequestMetadata.from_env` (``SERVICE_NAME``, ``ENVIRONMENT``, …).
+        Unattributed traffic still sends ``service=unattributed`` so Langfuse
+        shows *something*. Set ``LLG_REQUIRE_ATTRIBUTION=1`` (or pass
+        ``require_attribution=True``) to refuse calls without a real service name.
 
         Returns the parsed JSON body (OpenAI-compatible).
         """
@@ -200,16 +207,44 @@ class GatewayClient:
         if not messages:
             raise GatewayConfigError("messages must be a non-empty sequence")
 
+        if metadata is None:
+            meta_obj = RequestMetadata.from_env(model_alias=str(model).strip())
+        elif isinstance(metadata, RequestMetadata):
+            meta_obj = metadata
+        else:
+            meta_obj = RequestMetadata.from_mapping(metadata, require_trace_id=require_trace_id)
+
+        # Cross-check model_alias when caller provided metadata with a different alias.
+        if meta_obj.model_alias != str(model).strip():
+            meta_obj = RequestMetadata.from_mapping(
+                {
+                    **meta_obj.to_dict(require_trace_id=require_trace_id),
+                    "model_alias": str(model).strip(),
+                },
+                require_trace_id=require_trace_id,
+            )
+
+        must_attr = (
+            require_attribution
+            if require_attribution is not None
+            else _truthy_env("LLG_REQUIRE_ATTRIBUTION", default=False)
+        )
+        if must_attr and meta_obj.is_unattributed:
+            raise GatewayConfigError(
+                "request is unattributed: set SERVICE_NAME (or pass metadata.service) "
+                "so Langfuse/spend can identify the caller. "
+                "Unset LLG_REQUIRE_ATTRIBUTION to allow service=unattributed."
+            )
+
         body: dict[str, Any] = {
             "model": model,
             "messages": list(messages),
+            "metadata": meta_obj.to_dict(require_trace_id=require_trace_id),
         }
         if temperature is not None:
             body["temperature"] = temperature
         if max_tokens is not None:
             body["max_tokens"] = max_tokens
-        if metadata is not None:
-            body["metadata"] = metadata_to_dict(metadata, require_trace_id=require_trace_id)
         if extra_body:
             for k, v in extra_body.items():
                 if k in {"model", "messages", "metadata"}:

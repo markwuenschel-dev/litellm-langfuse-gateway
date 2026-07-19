@@ -21,6 +21,7 @@ __all__ = [
     "REQUIRED_FIELDS",
     "OPTIONAL_FIELDS",
     "ALLOWED_FIELDS",
+    "UNATTRIBUTED_SERVICE",
     "RequestMetadata",
     "schema_path",
     "load_schema",
@@ -205,6 +206,11 @@ def validate_metadata(data: Mapping[str, Any], *, require_trace_id: bool = False
     return out
 
 
+# Sentinel service name when the caller did not set SERVICE_NAME / metadata.service.
+# Visible in Langfuse/spend so unattributed traffic is obvious.
+UNATTRIBUTED_SERVICE = "unattributed"
+
+
 @dataclass(frozen=True)
 class RequestMetadata:
     """Typed request metadata for gateway chat calls."""
@@ -228,6 +234,81 @@ class RequestMetadata:
     def to_dict(self, *, require_trace_id: bool = False) -> dict[str, Any]:
         raw = {k: v for k, v in asdict(self).items() if v is not None}
         return validate_metadata(raw, require_trace_id=require_trace_id)
+
+    @property
+    def is_unattributed(self) -> bool:
+        """True when service is the unattributed sentinel (or empty after validate)."""
+        return self.service.strip().lower() in {
+            UNATTRIBUTED_SERVICE,
+            "unknown",
+            "unknown-service",
+        }
+
+    @classmethod
+    def from_env(
+        cls,
+        *,
+        model_alias: str,
+        feature: str | None = None,
+        service: str | None = None,
+        environment: str | None = None,
+        release: str | None = None,
+        request_id: str | None = None,
+        extra: Mapping[str, Any] | None = None,
+    ) -> RequestMetadata:
+        """Build required attribution fields from env + call site.
+
+        Env map (all optional except model_alias argument):
+
+        | Field | Env |
+        | --- | --- |
+        | service | ``SERVICE_NAME`` / ``LLG_SERVICE`` (default ``unattributed``) |
+        | feature | ``FEATURE_NAME`` / ``LLG_FEATURE`` (default ``chat``) |
+        | environment | ``ENVIRONMENT`` / ``LLG_ENVIRONMENT`` (default ``development``) |
+        | release | ``GIT_SHA`` / ``RELEASE`` / ``LLG_RELEASE`` (default ``unknown``) |
+
+        Use this so every GatewayClient call carries origin fields for Langfuse.
+        """
+        import os
+
+        svc = (
+            service
+            or os.environ.get("SERVICE_NAME")
+            or os.environ.get("LLG_SERVICE")
+            or UNATTRIBUTED_SERVICE
+        ).strip()
+        feat = (
+            feature or os.environ.get("FEATURE_NAME") or os.environ.get("LLG_FEATURE") or "chat"
+        ).strip()
+        env = (
+            environment
+            or os.environ.get("ENVIRONMENT")
+            or os.environ.get("LLG_ENVIRONMENT")
+            or "development"
+        ).strip()
+        if env not in ENVIRONMENTS:
+            env = "development"
+        rel = (
+            release
+            or os.environ.get("GIT_SHA")
+            or os.environ.get("RELEASE")
+            or os.environ.get("LLG_RELEASE")
+            or "unknown"
+        ).strip()
+        rid = (request_id or str(uuid.uuid4())).strip()
+        raw: dict[str, Any] = {
+            "request_id": rid,
+            "service": svc or UNATTRIBUTED_SERVICE,
+            "feature": feat or "chat",
+            "environment": env,
+            "release": rel or "unknown",
+            "model_alias": model_alias.strip(),
+        }
+        if extra:
+            for k, v in extra.items():
+                if v is not None and k not in raw:
+                    raw[k] = v
+        return cls.from_mapping(raw)
 
     @classmethod
     def from_mapping(
