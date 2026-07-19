@@ -1,0 +1,29 @@
+# Pin-spike control-state profile (characterization only — not production SoT).
+# Shared Router + virtual-key limiter Redis path; no LLM response caching.
+# Fake upstream only — no real provider credentials.
+
+model_list:
+  - model_name: pin-spike-model
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_base: http://fake-upstream:8080/v1
+      api_key: sk-pin-spike-fake
+
+litellm_settings:
+  request_timeout: 60
+  drop_params: true
+  json_logs: true
+  set_verbose: false
+  # Control-state Redis for virtual-key rpm/tpm across instances (no response cache).
+  cache: true
+  cache_params:
+    type: redis
+    host: os.environ/REDIS_HOST
+    port: os.environ/REDIS_PORT
+    password: os.environ/REDIS_PASSWORD
+    supported_call_types: []
+
+router_settings:
+  redis_host: os.environ/REDIS_HOST
+  redis_port: os.environ/REDIS_PORT
+  redis_password: os.environ/REDIS_PASSWORD

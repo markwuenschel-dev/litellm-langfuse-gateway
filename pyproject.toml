@@ -95,6 +95,9 @@ indent-style = "space"
 testpaths = ["tests"]
 pythonpath = ["src", "."]
 addopts = "-q"
+markers = [
+  "pin_spike: Docker pin-compatibility spike (set LLG_PIN_SPIKE=1; not LLG_LIVE)",
+]
 
 [tool.mypy]
 python_version = "3.11"
