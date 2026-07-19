@@ -85,7 +85,7 @@ cp infra/llm-gateway/.env.example infra/llm-gateway/.env
 
 In `infra/llm-gateway/.env` (or root `.env` used by Compose):
 
-1. Set `LITELLM_MASTER_KEY`, `LITELLM_SALT_KEY`, `POSTGRES_PASSWORD` (generate with `uv run llg secrets generate`).
+1. Set `LITELLM_MASTER_KEY`, `LITELLM_SALT_KEY`, `POSTGRES_PASSWORD`, `DATABASE_URL` (generate with `uv run llg secrets generate` — emits URL-encoded `DATABASE_URL`).
 2. Set provider keys you need (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`, …).
 3. Set Langfuse:
    - `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY`

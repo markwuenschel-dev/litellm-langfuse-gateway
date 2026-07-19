@@ -30,9 +30,9 @@ class KeyClientError(Exception):
 
 def default_base_url() -> str:
     """Proxy base URL without trailing slash or /v1 suffix."""
-    return (
-        os.environ.get("LITELLM_BASE_URL", "http://localhost:4000").removesuffix("/v1").rstrip("/")
-    )
+    from llm_client.proxy_url import proxy_root
+
+    return proxy_root()
 
 
 def require_master_key(explicit: str | None = None) -> str:
@@ -98,7 +98,7 @@ class KeyClient:
             raise KeyClientError(f"non-JSON response from {path}: {response.text[:200]}") from exc
         if not isinstance(data, (dict, list)):
             raise KeyClientError(f"unexpected JSON type from {path}: {type(data).__name__}")
-        return data  # type: ignore[return-value]
+        return data
 
     def create(
         self,

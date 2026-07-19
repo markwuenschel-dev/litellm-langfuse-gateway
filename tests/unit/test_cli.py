@@ -109,12 +109,13 @@ def test_smoke_base_url_still_rejects_provider_key(monkeypatch) -> None:  # type
     assert "config error" in combined.lower() or "OPENAI" in combined
 
 
-def test_reconcile_cost_stub_without_live(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+def test_reconcile_cost_unproven_exits_nonzero(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Stub must not report success (exit 0) when no reconciliation was performed."""
     monkeypatch.delenv("LLG_LIVE", raising=False)
     result = runner.invoke(app, ["reconcile-cost", "--run-id", "unit-test"])
-    assert result.exit_code == 0
+    assert result.exit_code == 2
     combined = result.stdout + result.stderr
-    assert "UNPROVEN" in combined or "reconcile" in combined.lower()
+    assert "UNPROVEN" in combined
     assert "unit-test" in combined
 
 

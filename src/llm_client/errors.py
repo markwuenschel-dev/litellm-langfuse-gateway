@@ -164,6 +164,7 @@ def map_http_error(
 
 def error_from_response(status_code: int, payload: Any) -> GatewayError:
     """Build an error from a parsed JSON body or raw text."""
+    body: str | None
     if isinstance(payload, dict):
         err = payload.get("error")
         if isinstance(err, dict):

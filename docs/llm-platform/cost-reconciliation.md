@@ -7,7 +7,7 @@ Compare **provider-reported usage**, **LiteLLM spend**, and **Langfuse observati
 | Item | State |
 | --- | --- |
 | Process document | **This file (live)** |
-| CLI helper | `uv run llg reconcile-cost` (prints procedure; does not invent numbers) |
+| CLI helper | `uv run llg reconcile-cost` (prints procedure; **exit 2** while UNPROVEN) |
 | Live reconciliation run | **UNPROVEN** without provider credentials, gateway spend data, and Langfuse project access |
 
 ## Tolerance proposal (initial)
@@ -59,7 +59,7 @@ uv run llg reconcile-cost
 uv run llg reconcile-cost --run-id my-run-2026-07-17
 ```
 
-Without live data the command explains the process and exits **0** with a clear **UNPROVEN** message. It does **not** fabricate reconciliation tables.
+Without a completed multi-system fetch the command explains the process and exits **2** with a clear **UNPROVEN** message. It does **not** fabricate reconciliation tables or report success.
 
 ## Evidence
 

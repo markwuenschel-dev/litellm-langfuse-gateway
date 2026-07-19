@@ -37,7 +37,7 @@ Image pins, LiteLLM release bumps, and breaking config changes.
 5. **Validate**
    ```bash
    # dummy env
-   set LITELLM_MASTER_KEY=sk-x LITELLM_SALT_KEY=sk-y POSTGRES_PASSWORD=x REDIS_PASSWORD=x  # bash: export …
+   set LITELLM_MASTER_KEY=sk-x LITELLM_SALT_KEY=sk-y POSTGRES_PASSWORD=x DATABASE_URL=postgresql://litellm:x@postgres:5432/litellm REDIS_PASSWORD=x
    docker compose -f infra/llm-gateway/compose.yaml config --quiet
    docker compose -f infra/llm-gateway/compose.yaml -f infra/llm-gateway/compose.redis.yaml config --quiet
    ```

@@ -58,7 +58,9 @@ services:
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?Set LITELLM_MASTER_KEY in .env}
       LITELLM_SALT_KEY: ${LITELLM_SALT_KEY:?Set LITELLM_SALT_KEY in .env}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-litellm}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-litellm}
+      # Full URL required so passwords with @ : / # etc. are not broken by string
+      # interpolation. Generate with: uv run llg secrets generate (URL-encodes).
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env (URL-encode password special characters)}
       # YAML is model-registry authority — keep false unless an ADR flips SoT to DB/UI
       STORE_MODEL_IN_DB: ${STORE_MODEL_IN_DB:-False}
 

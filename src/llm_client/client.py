@@ -98,13 +98,10 @@ class GatewayConfig:
         Raises GatewayConfigError if virtual key is missing or matches the master
         key under disallow policy (see ``is_likely_master_key`` limitations).
         """
-        base = os.environ.get("LITELLM_BASE_URL", "http://localhost:4000/v1").strip()
-        if not base:
-            base = "http://localhost:4000/v1"
-        # Normalize: ensure /v1 for chat completions
-        root = base.rstrip("/")
-        if not root.endswith("/v1"):
-            root = f"{root}/v1"
+        from llm_client.proxy_url import openai_base
+
+        # Normalize dual dialect: with or without /v1 → always OpenAI-compatible base
+        root = openai_base(os.environ.get("LITELLM_BASE_URL"))
 
         key = (os.environ.get("LITELLM_VIRTUAL_KEY") or "").strip()
         if not key:

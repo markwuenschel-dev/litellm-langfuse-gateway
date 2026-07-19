@@ -16,6 +16,7 @@ from llm_client.errors import (
     ProviderUnavailable,
 )
 from llm_client.metadata import RequestMetadata, load_schema, validate_metadata
+from llm_client.proxy_url import openai_base, proxy_root
 
 __all__ = [
     "BudgetExceeded",
@@ -33,6 +34,8 @@ __all__ = [
     "RequestMetadata",
     "disallow_master_key",
     "load_schema",
+    "openai_base",
+    "proxy_root",
     "validate_metadata",
 ]
 
