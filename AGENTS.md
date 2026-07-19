@@ -66,6 +66,7 @@ src/llm_client/          # App GatewayClient + metadata + errors
 scripts/                 # Thin re-exports of llg
 examples/                # reference_workflow, python/ts clients
 docs/llm-platform/       # Architecture, app-wiring, ops, …
+docs/adr/                # Architecture decision records (policy flips)
 tests/                   # unit + live-gated integration
 ```
 

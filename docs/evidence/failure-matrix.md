@@ -15,7 +15,17 @@ Hermetic coverage is automated under `tests/unit/`. Live/chaos rows require a ru
 | Model ACL deny body → `ModelAccessDenied` | mapped | `test_llm_client.py` | **Proven** (unit) |
 | Gateway RPM/TPM 429 → `GatewayRateLimited` | mapped | `test_llm_client.py` | **Proven** (unit) |
 
-## Live / compose chaos (`LLG_LIVE=1` — stubs)
+## Live / compose chaos (`LLG_LIVE=1`)
+
+| Test | Status |
+| --- | --- |
+| Readiness healthy | Automated when `LLG_LIVE=1` |
+| Budget exceeded (max_budget=0 key) | Automated when `LLG_LIVE=1` + master (`test_live_budget_exceeded`) |
+| Model ACL denied | Automated when `LLG_LIVE=1` + master (`test_live_model_acl_denied`) |
+| Postgres down → readiness fail | Manual chaos only |
+| Langfuse unreachable → LLM continues | Manual chaos only |
+
+## Live / compose chaos (`LLG_LIVE=1` — historical stubs note)
 
 Document each run with `templates/failure-run.md`. Until then:
 
