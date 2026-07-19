@@ -25,6 +25,46 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Hermetic dependency vulnerability audit (INT-112). No secrets beyond GITHUB_TOKEN.
+  # Blocking: local pip-audit + pnpm audit --audit-level high were clean at introduction.
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Python dependency audit (uv.lock via export + pip-audit)
+        run: |
+          set -euo pipefail
+          uv export --frozen --all-extras --no-emit-project -o /tmp/llg-requirements.txt
+          # CI-only tool; not a project dep (keeps lock lean)
+          uvx pip-audit -r /tmp/llg-requirements.txt
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        # version from package.json "packageManager"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install Node deps (for audit graph)
+        run: pnpm install --frozen-lockfile
+
+      - name: Node dependency audit (high+)
+        run: pnpm audit --audit-level high
+
   python:
     name: Python lint & test
     runs-on: ubuntu-latest
@@ -91,7 +131,12 @@ jobs:
       - name: Enforce image digest pins
         run: |
           set -euo pipefail
-          files=(infra/llm-gateway/compose.yaml infra/llm-gateway/compose.redis.yaml)
+          # Every compose file that ships image: lines (not overlays-only like compose.staging.yaml)
+          files=(
+            infra/llm-gateway/compose.yaml
+            infra/llm-gateway/compose.redis.yaml
+            tests/runtime_pin/compose/compose.pin-spike.yaml
+          )
           rc=0
           for f in "${files[@]}"; do
             echo "Checking image pins in $f"
