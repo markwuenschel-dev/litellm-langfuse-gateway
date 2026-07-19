@@ -9,7 +9,7 @@ import yaml
 from llg.paths import REPO_ROOT
 from llg.validate_config import (
     DEFAULT_ALIASES,
-    STABLE_ALIASES,
+    load_stable_aliases,
     validate_config,
     validate_model_aliases,
 )
@@ -31,7 +31,19 @@ def test_repo_config_exposes_stable_aliases() -> None:
     path = REPO_ROOT / "infra" / "llm-gateway" / "litellm-config.yaml"
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     names = {e["model_name"] for e in raw["model_list"]}
-    assert names >= STABLE_ALIASES
+    stable = load_stable_aliases()
+    assert stable  # derived from model-aliases.yaml
+    assert names >= stable
+
+
+def test_stable_aliases_derived_from_yaml_not_hardcoded() -> None:
+    """INT-002: adding an alias in YAML expands the derived set."""
+    stable = load_stable_aliases()
+    assert "llm-general" in stable
+    assert "grok-general" in stable
+    # Source is the file keys — same length as aliases map
+    raw = yaml.safe_load(DEFAULT_ALIASES.read_text(encoding="utf-8"))
+    assert stable == frozenset(raw["aliases"].keys())
 
 
 def test_scripts_reexport_same_result() -> None:
@@ -221,13 +233,14 @@ def test_alias_contract_route_mismatch(tmp_path: Path) -> None:
     assert any("route mismatch" in e and "llm-general" in e for e in errors)
 
 
-def test_validate_model_aliases_requires_stable_set(tmp_path: Path) -> None:
+def test_validate_model_aliases_requires_llm_general(tmp_path: Path) -> None:
+    """INT-002: file is the set; only required fixed name is llm-general."""
     path = tmp_path / "aliases.yaml"
     path.write_text(
         yaml.dump(
             {
                 "aliases": {
-                    "llm-general": {
+                    "openai-general": {
                         "litellm_model": "openai/gpt-4o-mini",
                         "api_key_env": "OPENAI_API_KEY",
                     }
@@ -237,4 +250,24 @@ def test_validate_model_aliases_requires_stable_set(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     errors = validate_model_aliases(path)
-    assert any("missing required stable aliases" in e for e in errors)
+    assert any("llm-general" in e for e in errors)
+
+
+def test_validate_model_aliases_accepts_file_as_full_set(tmp_path: Path) -> None:
+    path = tmp_path / "aliases.yaml"
+    path.write_text(
+        yaml.dump(
+            {
+                "aliases": {
+                    "llm-general": {
+                        "litellm_model": "openai/gpt-4o-mini",
+                        "api_key_env": "OPENAI_API_KEY",
+                        "consumers": ["examples"],
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert validate_model_aliases(path) == []
+    assert load_stable_aliases(path) == frozenset({"llm-general"})

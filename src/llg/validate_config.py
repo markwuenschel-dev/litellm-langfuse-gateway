@@ -16,23 +16,13 @@ __all__ = [
     "DEFAULT_CONFIG",
     "REPO_ROOT",
     "STABLE_ALIASES",
+    "load_stable_aliases",
     "main",
     "validate_config",
     "validate_model_aliases",
 ]
 
 DEFAULT_ALIASES = REPO_ROOT / "config" / "llm" / "model-aliases.yaml"
-
-# Application-facing contract (WP6 + WP7). Keep in sync with model-aliases.yaml.
-STABLE_ALIASES = frozenset(
-    {
-        "llm-general",
-        "openai-general",
-        "anthropic-general",
-        "gemini-general",
-        "grok-general",
-    }
-)
 
 
 def _require_list(data: dict[str, Any], key: str) -> list[Any]:
@@ -55,8 +45,31 @@ def _load_yaml_mapping(path: Path) -> tuple[dict[str, Any] | None, list[str]]:
     return raw, []
 
 
+def load_stable_aliases(path: Path = DEFAULT_ALIASES) -> frozenset[str]:
+    """Stable app-facing aliases = keys under ``aliases:`` in model-aliases.yaml.
+
+    INT-002: no hardcoded frozenset. Semantic write SoT is model-aliases.yaml;
+    litellm-config.yaml remains runtime model_list SoT and must expose each alias.
+    """
+    raw, errors = _load_yaml_mapping(path)
+    if errors or raw is None:
+        return frozenset()
+    aliases = raw.get("aliases")
+    if not isinstance(aliases, dict) or not aliases:
+        return frozenset()
+    return frozenset(str(name) for name in aliases if isinstance(name, str) and name.strip())
+
+
+# Derived at import for callers that still import STABLE_ALIASES (scripts, tests).
+# Always re-read via load_stable_aliases() when validating a non-default path.
+STABLE_ALIASES: frozenset[str] = load_stable_aliases()
+
+
 def validate_model_aliases(path: Path) -> list[str]:
-    """Validate config/llm/model-aliases.yaml structure and stable set."""
+    """Validate config/llm/model-aliases.yaml structure.
+
+    The file itself is the stable alias set (no separate hardcoded list).
+    """
     raw, errors = _load_yaml_mapping(path)
     if errors:
         return errors
@@ -100,9 +113,14 @@ def validate_model_aliases(path: Path) -> list[str]:
         elif api_key_env.lower().startswith("sk-") or " " in api_key_env:
             errors.append(f"{prefix}: api_key_env looks like a literal secret")
 
-    missing = STABLE_ALIASES - names
-    if missing:
-        errors.append("missing required stable aliases: " + ", ".join(sorted(missing)))
+        consumers = entry.get("consumers")
+        if consumers is not None and (
+            not isinstance(consumers, list) or not all(isinstance(c, str) for c in consumers)
+        ):
+            errors.append(f"{prefix}: consumers must be a list of strings when present")
+
+    if "llm-general" not in names:
+        errors.append("missing required default alias 'llm-general'")
 
     return errors
 

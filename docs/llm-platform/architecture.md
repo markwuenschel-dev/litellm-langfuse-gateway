@@ -68,7 +68,7 @@ infra/llm-gateway/
 config/llm/
   model-aliases.yaml
   metadata-contract.schema.json
-  environments/          # Non-secret env contracts
+  environments/          # Docs-only ops checklists (not runtime — ADR 0005)
 
 docs/llm-platform/
   app-wiring.md          # Wire product apps to the gateway

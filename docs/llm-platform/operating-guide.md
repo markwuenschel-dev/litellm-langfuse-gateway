@@ -7,7 +7,7 @@ Day-2 operations for the LiteLLM + Langfuse gateway. Canonical stack: `infra/llm
 | # | Item | Config / artifact | Verified? |
 | --- | --- | --- | --- |
 | 1 | Pinned image digests (LiteLLM, Postgres, Redis) | `compose.yaml`, `compose.redis.yaml`, `upgrade-notes.md` | Pin **configured**; live deploy **unproven** here |
-| 2 | `LITELLM_MODE=PRODUCTION` (staging/prod) | `config/llm/environments/{staging,production}.yaml`; set in runtime env | Configured in env contract |
+| 2 | `LITELLM_MODE=PRODUCTION` (staging/prod) | Set in runtime env / Compose; environments YAML is **docs checklist only** (ADR 0005) | Configured in env / Compose |
 | 3 | JSON logs, non-verbose | `litellm-config.yaml`: `json_logs: true`, `set_verbose: false` | Configured |
 | 4 | `request_timeout: 600` | `litellm_settings.request_timeout` + env YAMLs | Configured |
 | 5 | `num_workers: 1`; scale out replicas | `compose.yaml` command; k8s sketch | Configured |
