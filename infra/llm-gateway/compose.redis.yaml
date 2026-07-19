@@ -35,15 +35,12 @@ services:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
+    # redis-cli reads REDISCLI_AUTH; password must not appear on argv (no -a / ps).
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env when enabling Redis}
     healthcheck:
-      test:
-        [
-          "CMD",
-          "redis-cli",
-          "-a",
-          "${REDIS_PASSWORD}",
-          "ping",
-        ]
+      # Auth via REDISCLI_AUTH only — never redis-cli -a (argv-visible).
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
