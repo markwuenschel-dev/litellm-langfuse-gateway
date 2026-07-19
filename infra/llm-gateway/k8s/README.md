@@ -72,16 +72,9 @@ spec:
                   name: litellm-gateway-secrets
                   key: DATABASE_URL
             # Provider + Langfuse keys: additional secretKeyRef entries
-            - name: REDIS_HOST
-              value: redis  # when multi-replica
-            - name: REDIS_PORT
-              value: "6379"
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: litellm-gateway-secrets
-                  key: REDIS_PASSWORD
-                  optional: true
+            # Do NOT inject REDIS_* into LiteLLM on this pin for "shared limits".
+            # Redis as a sidecar/service is fine; wiring control-state requires
+            # fail-closed evidence (see docs/evidence/spikes/2026-07-19-int-001-*).
           volumeMounts:
             - name: config
               mountPath: /app/config.yaml
@@ -123,7 +116,7 @@ spec:
 | `DATABASE_URL` | Postgres |
 | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `XAI_API_KEY` | Provider |
 | `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | Cloud |
-| `REDIS_PASSWORD` | When Redis enabled |
+| `REDIS_PASSWORD` | Only if running a Redis **service** separately; not for LiteLLM shared-limit claim |
 
 ## Smoke after deploy
 

@@ -1,4 +1,10 @@
-# Optional Redis overlay for multi-replica LiteLLM or distributed rate limits / routing.
+# Optional Redis *service* overlay only.
+#
+# Starts a Redis container next to the gateway stack. It does **not** configure
+# LiteLLM for shared Router state, virtual-key RPM/TPM, response caching, or
+# multi-replica control plane on the current pin (v1.92.0 silently falls back to
+# process-local limits if Redis control state is wired — see
+# docs/evidence/spikes/2026-07-19-int-001-redis-pin-compat.md).
 #
 # From this directory:
 #   docker compose -f compose.yaml -f compose.redis.yaml up -d
@@ -6,9 +12,10 @@
 # From repo root (thin shims):
 #   docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d
 #
-# Also uncomment Redis-related blocks in litellm-config.yaml and set
-# REDIS_HOST / REDIS_PORT / REDIS_PASSWORD in .env.
-# Prefer host/port/password over a single redis_url (LiteLLM production guidance).
+# CLI: `uv run llg up --redis-service` (no shared-limit claim).
+# Set REDIS_PASSWORD in .env for the Redis container itself.
+# Prefer host/port/password over a single redis_url if a future fail-closed
+# shared-state topology is approved separately.
 
 services:
   redis:
@@ -43,11 +50,9 @@ services:
     networks:
       - gateway
 
+  # Bring Redis up with the project; do not inject REDIS_* into LiteLLM and do
+  # not claim shared routing / virtual-key limits from this overlay alone.
   litellm:
-    environment:
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env when enabling Redis}
     depends_on:
       redis:
         condition: service_healthy

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Codebase Integrity Report — litellm-langfuse-gateway — 2026-07-19</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #f7f5f1; color: #1a1a1a; font-family: "Public Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.6; }
+  a { color: #3730a3; }
+  code { font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+  h1,h2,h3 { font-family: "Space Grotesk", sans-serif; font-weight: 600; letter-spacing: -0.02em; }
+</style>
+</head>
+<body style="max-width:960px;margin:0 auto;padding:32px 24px 80px;">
+
+<p style="font-family:IBM Plex Mono,monospace;font-size:11px;color:#666;margin:0 0 8px;">
+  CODEBASE INTEGRITY · PARALLEL REPORT · READ-ONLY · 2026-07-19
+</p>
+<h1 style="font-size:28px;margin:0 0 8px;">litellm-langfuse-gateway</h1>
+<p style="margin:0 0 24px;color:#444;">
+  Repo Audit Swarm (deepening · graded integrity · blast radius · verification readiness).
+  Hermetic baseline: <code>ruff</code> pass · <code>pytest</code> hermetic green · <code>llg config validate</code> OK.
+  Mode: <strong>--parallel-report</strong> (no production edits; stop at candidate gate).
+</p>
+
+<!-- 1. Executive summary -->
+<section style="margin-bottom:32px;padding:20px;background:#fff;border:1px solid #e5e2db;border-radius:4px;">
+  <h2 style="margin-top:0;font-size:18px;">1. Executive summary</h2>
+  <p>The platform has a coherent runtime spine: digest-pinned Compose, YAML model list, classic Langfuse callbacks, virtual-key client, hermetic unit coverage for metadata/keys/config, and honest milestone language for many live DoD rows. Integrity risk is less “nothing works” and more <strong>false completeness</strong>: dual SoTs that stay in sync only by discipline, Redis/env contracts that look binding but are not loaded, live chaos/ACL tests permanently skipped, and CLI verbs (reconcile-cost) that cannot go red.</p>
+  <p style="margin-bottom:0;"><strong>Confirmed:</strong> hermetic tests pass; pins + alias-sync validator exist; classic <code>langfuse</code> in config. <strong>Inferred:</strong> operators will mis-read Redis overlay and dual <code>.env</code> paths. <strong>Unknown:</strong> external consumers (leave-sprint / Realmwalkers / IBKR) not re-scanned in this audit tree.</p>
+</section>
+
+<!-- 2. Overall grade -->
+<section style="margin-bottom:32px;padding:20px;background:#fff;border:1px solid #e5e2db;border-radius:4px;">
+  <h2 style="margin-top:0;font-size:18px;">2. Overall repo grade</h2>
+  <p style="font-size:42px;font-family:Space Grotesk,sans-serif;font-weight:700;color:#3730a3;margin:8px 0;">B−</p>
+  <p style="margin:0;color:#444;">Solid hermetic scaffolding and honest production docs, but operational false-safety (Redis, env contracts) and weak live verification prevent A. Grade from scorecards: architecture seams open, CI good for hermetic, verification readiness lagging for DoD chaos rows.</p>
+</section>
+
+<!-- 3. Lane scorecards -->
+<section style="margin-bottom:32px;">
+  <h2 style="font-size:18px;">3. Lane scorecards</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;">
+    <thead>
+      <tr style="text-align:left;border-bottom:2px solid #1a1a1a;">
+        <th style="padding:8px;">Lane</th>
+        <th style="padding:8px;">Health</th>
+        <th style="padding:8px;">Focus</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid #e5e2db;"><td style="padding:8px;font-family:IBM Plex Mono,monospace;">deepening_seams</td><td style="padding:8px;color:#b45309;">3/5</td><td style="padding:8px;">Triple alias authority; env YAML unbound; BASE_URL dual dialect</td></tr>
+      <tr style="border-bottom:1px solid #e5e2db;"><td style="padding:8px;font-family:IBM Plex Mono,monospace;">graded_integrity</td><td style="padding:8px;color:#b45309;">3.5/5</td><td style="padding:8px;">Redis false-enable; dual .env; no gitleaks; live stubs</td></tr>
+      <tr style="border-bottom:1px solid #e5e2db;"><td style="padding:8px;font-family:IBM Plex Mono,monospace;">blast_radius</td><td style="padding:8px;color:#b45309;">3/5</td><td style="padding:8px;">Alias/env dual-SoT; inventory stale; external apps unknown</td></tr>
+      <tr><td style="padding:8px;font-family:IBM Plex Mono,monospace;">verification_readiness</td><td style="padding:8px;color:#b91c1c;">2.5/5</td><td style="padding:8px;">Hermetic strong; live ACL/budget/chaos not red-capable</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 4. Top candidates -->
+<section style="margin-bottom:32px;">
+  <h2 style="font-size:18px;">4. Top merged candidates</h2>
+  <ol style="padding-left:20px;">
+    <li style="margin-bottom:8px;"><code>INT-001</code> Redis overlay injects env but config leaves Redis unused (false multi-replica safety)</li>
+    <li style="margin-bottom:8px;"><code>INT-002</code> Triple alias authority (YAML×2 + <code>STABLE_ALIASES</code>) without render seam</li>
+    <li style="margin-bottom:8px;"><code>INT-003</code> Dual proxy <code>.env</code> / <code>.env.example</code> locations (llg vs root compose)</li>
+    <li style="margin-bottom:8px;"><code>INT-004</code> No secret-scan in CI (gitleaks/trufflehog planned, absent)</li>
+    <li style="margin-bottom:8px;"><code>INT-005</code> Live ACL/budget/Postgres chaos permanently skipped — cannot prove DoD 4/13/14</li>
+    <li style="margin-bottom:8px;"><code>INT-006</code> Environment YAML contracts not loaded by code or CI</li>
+    <li style="margin-bottom:8px;"><code>INT-007</code> <code>llg reconcile-cost</code> always exit 0 (process stub)</li>
+  </ol>
+</section>
+
+<!-- 5. Candidate ledger -->
+<section style="margin-bottom:32px;">
+  <h2 style="font-size:18px;">5. Candidate ledger</h2>
+  <p style="font-size:13px;color:#666;">Priority = (sev+conf+lev+loc+test) − (blast+regr+human). Select one ID for the next loop.</p>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b91c1c;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-001</code> Redis overlay false-enable</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Reliability / Wiring · status: <strong>open</strong> · priority: <strong>14</strong></p>
+    <p style="margin:0 0 8px;"><strong>Friction:</strong> <code>llg up --redis</code> starts Redis and injects <code>REDIS_*</code>, but <code>litellm-config.yaml</code> keeps cache/redis_host commented — shared rpm/tpm not actually on.</p>
+    <p style="margin:0 0 8px;"><strong>Evidence:</strong> <code>compose.redis.yaml:46-50</code>; <code>litellm-config.yaml:77-99</code>; <code>cli.py</code> redis flag; docs say “uncomment” but CLI does not enforce.</p>
+    <p style="margin:0 0 8px;"><strong>Scores:</strong> sev 4 conf 5 lev 4 loc 4 test 5 · blast 3 regr 2 human 3</p>
+    <p style="margin:0;"><strong>Branch:</strong> fitness-check (validate fails if REDIS set without config) or direct fix (wire redis blocks when overlay used). Lenses: Wiring, Reliability.</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b91c1c;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-002</code> Triple alias authority without compile seam</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Architecture Fitness · status: <strong>open</strong> · priority: <strong>10</strong> · human_decision_risk: 4</p>
+    <p style="margin:0 0 8px;"><strong>Friction:</strong> <code>model-aliases.yaml</code> + <code>litellm-config.yaml</code> + hardcoded <code>STABLE_ALIASES</code>; docs disagree which is SoT; planned <code>llg config render</code> never shipped.</p>
+    <p style="margin:0 0 8px;"><strong>Evidence:</strong> <code>model-aliases.yaml:3-7</code>; <code>litellm-config.yaml:4</code>; <code>validate_config.py:26-35</code>; <code>app-wiring.md</code> vs <code>architecture.md</code> SoT claims; plan L170.</p>
+    <p style="margin:0 0 8px;"><strong>Scores:</strong> sev 4 conf 5 lev 5 loc 2 test 5 · blast 4 regr 3 human 4</p>
+    <p style="margin:0;"><strong>Branch:</strong> design (pick single write SoT) then fitness-check (derive STABLE_ALIASES from YAML). Lenses: Architecture, Consistency, Connected-impact.</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b45309;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-003</code> Dual proxy .env paths (llg vs root compose)</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Process / Wiring · status: <strong>open</strong> · priority: <strong>12</strong></p>
+    <p style="margin:0 0 8px;"><strong>Friction:</strong> <code>llg up</code> cwd=<code>infra/llm-gateway</code> loads that <code>.env</code>; root <code>docker compose</code> loads root <code>.env</code>. Dual <code>.env.example</code> with no CI sync.</p>
+    <p style="margin:0 0 8px;"><strong>Evidence:</strong> <code>compose_ops.py:42-43</code>; root vs infra <code>.env.example</code>; README dual copy instructions.</p>
+    <p style="margin:0 0 8px;"><strong>Scores:</strong> sev 3 conf 5 lev 4 loc 3 test 4 · blast 3 regr 2 human 2</p>
+    <p style="margin:0;"><strong>Branch:</strong> direct fix or fitness-check (CI key-superset; warn if root .env exists and gateway missing). Lenses: Wiring, Process.</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b45309;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-004</code> No secret-scan job in CI</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Security / Build-CI · status: <strong>open</strong> · priority: <strong>17</strong></p>
+    <p style="margin:0 0 8px;"><strong>Friction:</strong> DoD #16 / plan call for gitleaks; CI has ruff/pytest/pin only. Hygiene is gitignore + human review.</p>
+    <p style="margin:0 0 8px;"><strong>Evidence:</strong> <code>ci.yml</code> (no gitleaks); <code>MILESTONE-REPORT.md</code> DoD 16; plan secret-scan note.</p>
+    <p style="margin:0 0 8px;"><strong>Scores:</strong> sev 3 conf 5 lev 4 loc 4 test 5 · blast 2 regr 1 human 1</p>
+    <p style="margin:0;"><strong>Branch:</strong> fitness-check (add gitleaks action). Lenses: Security, Test/CI.</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b45309;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-005</code> Live ACL/budget/Postgres chaos not red-capable</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Testing · status: <strong>open</strong> · priority: <strong>11</strong></p>
+    <p style="margin:0 0 8px;"><strong>Friction:</strong> <code>test_failure_modes_live.py</code> permanently skips budget/ACL/Postgres-down/Langfuse-down; CI never sets <code>LLG_LIVE</code>. DoD 4/13/14 cannot be machine-proven.</p>
+    <p style="margin:0 0 8px;"><strong>Evidence:</strong> <code>test_failure_modes_live.py:36-59</code>; <code>ci.yml</code> no LLG_LIVE; MILESTONE UNPROVEN rows.</p>
+    <p style="margin:0 0 8px;"><strong>Scores:</strong> sev 3 conf 5 lev 4 loc 3 test 4 · blast 3 regr 2 human 3</p>
+    <p style="margin:0;"><strong>Branch:</strong> fitness-check (implement one live key: budget then ACL). Lenses: Test/CI, Reliability.</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b45309;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-006</code> Environment YAML contracts unbound</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Architecture / Process · status: <strong>open</strong> · priority: <strong>9</strong> · human_decision_risk: 4</p>
+    <p style="margin:0 0 8px;"><strong>Friction:</strong> <code>config/llm/environments/*</code> describe redis_required / logging / mode; nothing loads them; runtime litellm-config is always prod-lean logging.</p>
+    <p style="margin:0 0 8px;"><strong>Evidence:</strong> <code>development.yaml:10-13</code>; <code>litellm-config.yaml:63</code>; no <code>environments/</code> refs in <code>src/</code>.</p>
+    <p style="margin:0 0 8px;"><strong>Scores:</strong> sev 3 conf 5 lev 4 loc 3 test 4 · blast 3 regr 2 human 4</p>
+    <p style="margin:0;"><strong>Branch:</strong> design (docs-only vs enforce) then either demote or wire. Lenses: Architecture, Consistency.</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b45309;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-007</code> reconcile-cost always exit 0</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Architecture / Testing · status: <strong>open</strong> · priority: <strong>8</strong></p>
+    <p style="margin:0 0 8px;"><strong>Friction:</strong> First-class CLI verb cannot fail; DoD #15 unprovable.</p>
+    <p style="margin:0 0 8px;"><strong>Evidence:</strong> <code>cli.py:456-495</code>; <code>cost-reconciliation.md</code>.</p>
+    <p style="margin:0 0 8px;"><strong>Scores:</strong> sev 2 conf 5 lev 3 loc 4 test 5 · blast 2 regr 1 human 3</p>
+    <p style="margin:0;"><strong>Branch:</strong> design (implement vs demote to docs). Lenses: Architecture, Verification.</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #047857;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-008</code> Stale langfuse_otel in infra .env.example</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: ProcessDrift · status: <strong>open</strong> · priority: <strong>16</strong> · quick win</p>
+    <p style="margin:0 0 8px;"><strong>Friction:</strong> Comment still says <code>langfuse_otel</code>; config uses classic <code>langfuse</code>.</p>
+    <p style="margin:0 0 8px;"><strong>Evidence:</strong> <code>infra/llm-gateway/.env.example:120</code>; <code>litellm-config.yaml:74-75</code>.</p>
+    <p style="margin:0 0 8px;"><strong>Scores:</strong> sev 2 conf 5 lev 3 loc 5 test 4 · blast 1 regr 1 human 1</p>
+    <p style="margin:0;"><strong>Branch:</strong> direct fix (comment/docs only).</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #047857;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-009</code> compose.staging.yaml not in CI compose config</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Build/CI · status: <strong>open</strong> · priority: <strong>15</strong> · quick win</p>
+    <p style="margin:0 0 8px;"><strong>Evidence:</strong> <code>ci.yml</code> compose job; <code>compose.staging.yaml</code> exists.</p>
+    <p style="margin:0 0 8px;"><strong>Scores:</strong> sev 2 conf 5 lev 4 loc 5 test 5 · blast 1 regr 1 human 1</p>
+    <p style="margin:0;"><strong>Branch:</strong> direct fix (add config step).</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #047857;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-010</code> LITELLM_BASE_URL dual dialect (ops strip /v1 vs app append)</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Maintainability · status: <strong>open</strong> · priority: <strong>13</strong></p>
+    <p style="margin:0 0 8px;"><strong>Evidence:</strong> <code>keys.py:31</code>; <code>llm_client/client.py:101-108</code>; reimplemented in cli smoke.</p>
+    <p style="margin:0 0 8px;"><strong>Scores:</strong> sev 3 conf 5 lev 4 loc 4 test 5 · blast 3 regr 3 human 2</p>
+    <p style="margin:0;"><strong>Branch:</strong> direct fix (shared <code>proxy_root</code>/<code>openai_base</code> helpers).</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b45309;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-011</code> DATABASE_URL password not URL-encoded in compose</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Bug · status: <strong>open</strong> · priority: <strong>10</strong></p>
+    <p style="margin:0 0 8px;"><strong>Evidence:</strong> <code>compose.yaml:61</code> string interpolation.</p>
+    <p style="margin:0 0 8px;"><strong>Scores:</strong> sev 3 conf 4 lev 3 loc 4 test 4 · blast 3 regr 2 human 1</p>
+    <p style="margin:0;"><strong>Branch:</strong> direct fix (encode password or use compose secrets).</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #047857;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-012</code> provider-call-inventory.md stale paths/status</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: ProcessDrift · status: <strong>open</strong> · priority: <strong>12</strong></p>
+    <p style="margin:0 0 8px;"><strong>Evidence:</strong> inventory still lists vendor scaffold aliases; wrong test paths; gpt-4o-mini example claims.</p>
+    <p style="margin:0 0 8px;"><strong>Branch:</strong> direct fix (docs rewrite to five stable aliases).</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #6b7280;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-013</code> ADR / decision log missing</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Architecture · status: <strong>open</strong> · needs-human-decision for content · priority: <strong>8</strong></p>
+    <p style="margin:0 0 8px;"><strong>Friction:</strong> Policy says “require ADR” for SoT/fallback flips; no <code>docs/adr/</code>.</p>
+    <p style="margin:0;"><strong>Branch:</strong> design / capture ADRs for classic langfuse, YAML SoT, fallbacks off.</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #6b7280;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-014</code> Metadata schema vs pure-Python dual SoT</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Data Contract · status: <strong>open</strong></p>
+    <p style="margin:0;"><strong>Branch:</strong> fitness-check (parity test schema ↔ Python constants).</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #6b7280;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-015</code> mypy not in CI</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Build/CI · status: <strong>open</strong> · priority: high for CI hygiene</p>
+    <p style="margin:0;"><strong>Branch:</strong> fitness-check (add mypy job).</p>
+  </article>
+</section>
+
+<!-- 6-13 abbreviated sections -->
+<section style="margin-bottom:32px;padding:20px;background:#fff;border:1px solid #e5e2db;">
+  <h2 style="margin-top:0;font-size:18px;">6–8. Lane findings · duplicates · human blockers</h2>
+  <p><strong>Duplicate groups:</strong> Redis false-enable merges graded C01+C05; dual env merges C02+C03; alias triple authority merges deepening#1 + blast#1; env YAML unbound merges deepening#2 + graded C06.</p>
+  <p><strong>Human-decision blockers</strong> (connected-impact categories):</p>
+  <ul>
+    <li><strong>Architecture / SoT:</strong> single alias write authority (INT-002)</li>
+    <li><strong>Policy / enforce vs docs:</strong> environments/*.yaml binding (INT-006)</li>
+    <li><strong>Product surface:</strong> expand GatewayClient vs OpenAI SDK primary (deepening)</li>
+    <li><strong>Scope of automation:</strong> real reconcile-cost vs demote (INT-007)</li>
+  </ul>
+</section>
+
+<section style="margin-bottom:32px;padding:20px;background:#fff;border:1px solid #e5e2db;">
+  <h2 style="margin-top:0;font-size:18px;">9. Quick wins</h2>
+  <ol>
+    <li><code>INT-008</code> Fix langfuse_otel comment in <code>.env.example</code></li>
+    <li><code>INT-009</code> CI validate compose.staging.yaml</li>
+    <li><code>INT-004</code> Add gitleaks to CI</li>
+    <li><code>INT-012</code> Rewrite provider-call-inventory to five aliases</li>
+    <li><code>INT-015</code> mypy in CI</li>
+  </ol>
+</section>
+
+<section style="margin-bottom:32px;padding:20px;background:#fff;border:1px solid #e5e2db;">
+  <h2 style="margin-top:0;font-size:18px;">10. High-leverage deep work</h2>
+  <ul>
+    <li><code>INT-002</code> Alias SoT + render/derive STABLE_ALIASES</li>
+    <li><code>INT-001</code> Redis enable path honesty</li>
+    <li><code>INT-005</code> Live budget/ACL + one chaos path red-capable</li>
+  </ul>
+</section>
+
+<section style="margin-bottom:32px;padding:20px;background:#fff;border:1px solid #e5e2db;">
+  <h2 style="margin-top:0;font-size:18px;">11. Unsafe to auto-execute</h2>
+  <p>INT-002 (SoT fork), INT-006 (env contract authority), GatewayClient expansion decision, external-repo migration claims without re-inventory, any change that flips fallbacks on.</p>
+</section>
+
+<section style="margin-bottom:32px;padding:20px;background:#fff;border:1px solid #e5e2db;">
+  <h2 style="margin-top:0;font-size:18px;">12. Verification readiness</h2>
+  <p><strong>Strong hermetic red/green:</strong> metadata, key refuse, YAML alias sync, empty fallbacks, pin CI.</p>
+  <p><strong>Weak live:</strong> permanent skips for budget/ACL/Postgres/Langfuse chaos; smoke green without LLG_LIVE; reconcile-cost never red; evidence index empty vs “exercised” narrative.</p>
+  <p><strong>Harnesses needed before claiming DoD 4/13/14:</strong> live key create+chat with tight budget; compose stop postgres readiness; Langfuse bad-host chat still 200.</p>
+</section>
+
+<section style="margin-bottom:32px;padding:20px;background:#fff;border:1px solid #e5e2db;">
+  <h2 style="margin-top:0;font-size:18px;">13. Recommended queue</h2>
+  <ol>
+    <li>INT-004 secret-scan CI (if process priority)</li>
+    <li>INT-001 Redis false-enable</li>
+    <li>INT-003 dual .env DX</li>
+    <li>INT-008 + INT-009 quick docs/CI</li>
+    <li>INT-005 live budget/ACL (after stack available)</li>
+    <li>INT-002 design pass on alias SoT (human first)</li>
+    <li>INT-006 decide env YAML fate</li>
+  </ol>
+  <p style="margin-bottom:0;color:#666;font-size:13px;">Rejected broad cleanup: full monorepo rewrite, self-host Langfuse HA, inventing rebalancer contracts, cross-repo leave-sprint/Realmwalkers/IBKR deep audit in this loop (out of tree).</p>
+</section>
+
+<section style="padding:20px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:4px;">
+  <h2 style="margin-top:0;font-size:18px;">Stage 3 — Candidate gate (stop)</h2>
+  <p>No production code was changed in this invocation.</p>
+  <p><strong>Select exactly one candidate ID</strong> (e.g. <code>INT-001</code>) for the next integrity loop (design / fix / fitness-check). Do not batch.</p>
+  <p style="margin-bottom:0;font-family:IBM Plex Mono,monospace;font-size:12px;">
+    Report: docs/evidence/audits/2026-07-19-integrity-parallel-report.html<br/>
+    Ledger: docs/evidence/audits/2026-07-19-integrity-candidate-ledger.yaml
+  </p>
+</section>
+
+</body>
+</html>

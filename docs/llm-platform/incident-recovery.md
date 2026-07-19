@@ -20,7 +20,7 @@ Related:
 | `POSTGRES_PASSWORD` / `DATABASE_URL` | DB auth | Rotatable with coordinated app restart |
 | Provider API keys | Proxy → provider | Per provider policy; apps never hold these |
 | `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | Telemetry | Rotatable in Langfuse project |
-| `REDIS_PASSWORD` | Multi-replica cache / limits | Rotatable with Redis + proxy restart |
+| `REDIS_PASSWORD` | Redis **container** auth when using `--redis-service` (not LiteLLM shared limits) | Rotatable with Redis restart |
 | Virtual keys | App → proxy | Revoke/reissue per app (`uv run llg keys revoke`); prefer over master |
 
 ---

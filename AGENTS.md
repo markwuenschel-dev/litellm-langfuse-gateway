@@ -15,7 +15,7 @@ Deployment target:
 
 - **Self-hosted** LiteLLM + PostgreSQL  
 - **Langfuse Cloud** (not self-hosted unless residency/regulatory/cost force it)  
-- **Redis** only when multi-replica or shared rate-limit / routing state  
+- **Redis service** optional (`--redis-service`); no shared rate-limit topology claimed on current pin
 
 ## Architecture (do not invert ownership)
 
@@ -48,7 +48,7 @@ Application code should:
 2. **`LITELLM_SALT_KEY` is permanent.** Generate once per environment; offline escrow; never rotate casually.
 3. **Pin images by digest** in Compose (tag + `@sha256:…`). No floating `latest` / unpinned `main-stable` in production artifacts. CI enforces digests.
 4. **PostgreSQL is required** for virtual keys, teams, budgets, spend.
-5. **Redis is optional** until multi-instance; prefer host/port/password over sole `redis_url`.
+5. **Redis service is optional** (`llg up --redis-service`). It starts a container only — **no** shared Router / virtual-key limit topology is claimed on the current pin (silent-degrade evidence). Reopen distributed controls only with fail-closed pin proof or an approved gateway-policy design.
 6. **Do not self-host Langfuse by default.**
 7. **YAML is model-registry SoT** (`infra/llm-gateway/litellm-config.yaml`). `STORE_MODEL_IN_DB=False`. No raw keys in YAML — `os.environ/...` only.
 8. **OpenAI-compatible surface is the app contract.** Prefer stable aliases (`llm-general`, …).
@@ -82,7 +82,7 @@ tests/                   # unit + live-gated integration
 | Wire an app | `docs/llm-platform/app-wiring.md` + `.env.app.example` |
 | Add alias | Edit `config/llm/model-aliases.yaml` + `litellm-config.yaml`; keep in sync; validate |
 | Langfuse | Proxy: `LANGFUSE_*` + classic `langfuse` callbacks in config; recreate litellm after env change |
-| Redis | `uv run llg up --redis` or redis compose overlay |
+| Redis service | `uv run llg up --redis-service` or redis compose overlay (container only; no shared-limit claim) |
 
 ## Tooling
 

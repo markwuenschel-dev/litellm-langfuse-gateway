@@ -1,4 +1,5 @@
-# Thin DX shim — canonical Redis overlay lives in infra/llm-gateway/
+# Thin DX shim — Redis *service* overlay in infra/llm-gateway/compose.redis.yaml
+# (container only; no LiteLLM shared-limit claim). Prefer: uv run llg up --redis-service
 #
 #   docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d
 

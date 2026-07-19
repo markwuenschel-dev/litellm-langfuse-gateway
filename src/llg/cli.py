@@ -133,10 +133,14 @@ def health(
 
 @app.command("up")
 def up(
-    redis: bool = typer.Option(
+    redis_service: bool = typer.Option(
         False,
-        "--redis",
-        help="Also start Redis via compose.redis.yaml overlay.",
+        "--redis-service",
+        help=(
+            "Also start the Redis *container* via compose.redis.yaml. "
+            "Service only: does not configure shared Router state, caching, "
+            "or virtual-key limits (no distributed-limit claim on this pin)."
+        ),
     ),
     detach: bool = typer.Option(
         True,
@@ -147,7 +151,7 @@ def up(
 ) -> None:
     """Start LiteLLM + PostgreSQL via infra/llm-gateway/compose.yaml."""
     try:
-        code = compose_up(redis=redis, detach=detach)
+        code = compose_up(redis_service=redis_service, detach=detach)
     except FileNotFoundError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1) from exc
@@ -157,10 +161,10 @@ def up(
 
 @app.command("down")
 def down(
-    redis: bool = typer.Option(
+    redis_service: bool = typer.Option(
         False,
-        "--redis",
-        help="Include Redis overlay file when tearing down.",
+        "--redis-service",
+        help="Include Redis service overlay when tearing down.",
     ),
     volumes: bool = typer.Option(
         False,
@@ -171,7 +175,7 @@ def down(
 ) -> None:
     """Stop the gateway Compose stack."""
     try:
-        code = compose_down(redis=redis, volumes=volumes)
+        code = compose_down(redis_service=redis_service, volumes=volumes)
     except FileNotFoundError as exc:
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(1) from exc

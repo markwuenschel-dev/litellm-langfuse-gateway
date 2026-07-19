@@ -46,7 +46,7 @@ Applications (optional)
 | LiteLLM | Self-hosted (Compose / your platform) |
 | PostgreSQL | Required for keys, budgets, spend |
 | Langfuse | **Cloud** (match `LANGFUSE_HOST` to project region: US `https://us.cloud.langfuse.com` or EU `https://cloud.langfuse.com`) |
-| Redis | Only when multi-replica / shared rate limits |
+| Redis | Optional **service** only (`--redis-service`); no shared-limit topology claimed on current pin |
 
 Treat **`LITELLM_SALT_KEY` as permanent**. Pin images by **tag + digest** (see `infra/llm-gateway/compose.yaml`).
 
@@ -266,7 +266,7 @@ CI on `main` runs ruff, pytest, typecheck, image-pin enforcement, and Compose va
 - [ ] `LITELLM_MASTER_KEY` + permanent `LITELLM_SALT_KEY` in a secret store
 - [ ] Virtual keys per app × environment (budgets + model allow-lists)
 - [ ] Langfuse keys match project region; host and OTEL host consistent
-- [ ] Redis when running more than one proxy replica
+- [ ] Redis service only if needed for non-LiteLLM uses; multi-replica shared limits require fail-closed design (not supplied by `--redis-service`)
 - [ ] TLS + private network for the proxy
 - [ ] Apps have no provider keys / no master key
 - [ ] Health checks and log aggregation

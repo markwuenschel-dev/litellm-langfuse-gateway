@@ -1,0 +1,382 @@
+# Candidate ledger — litellm-langfuse-gateway integrity parallel report
+# Date: 2026-07-19
+# Mode: --parallel-report (read-only; stop at candidate gate)
+# Status values: open | selected | shipped | fixed | check-added | rejected | blocked | needs-human-decision
+
+meta:
+  repo: litellm-langfuse-gateway
+  ref: main@c7f1661
+  hermetic_baseline:
+    ruff: pass
+    pytest_hermetic: pass
+    config_validate: pass
+  lane_sources:
+    - deepening_seams
+    - graded_integrity
+    - blast_radius
+    - verification_readiness
+
+candidates:
+
+  - candidate_id: INT-001
+    title: Redis compose overlay does not enable LiteLLM Redis in config
+    status: open
+    category: Reliability
+    lane_sources: [graded_integrity, blast_radius]
+    summary: >
+      llg up --redis starts Redis and injects REDIS_* but litellm-config keeps
+      cache/redis_host commented — false multi-replica safety.
+    root_cause: Overlay ships infra without binding runtime SoT.
+    evidence:
+      - file: infra/llm-gateway/compose.redis.yaml
+        line: 46
+        observation: REDIS_* injected into litellm
+      - file: infra/llm-gateway/litellm-config.yaml
+        line: 77
+        observation: redis/cache blocks still commented
+    scores:
+      severity: 4
+      confidence: 5
+      leverage: 4
+      locality: 4
+      testability: 5
+      blast_radius: 3
+      regression_risk: 2
+      human_decision_risk: 3
+    rollup:
+      priority_score: 14
+      recommended_action: fitness-check
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: fitness-check
+    lenses: [Wiring, Reliability, Test/CI]
+    enforceable_check: >
+      Hermetic test or validate: if REDIS_HOST set in env sample for redis mode,
+      require redis_host/cache blocks non-empty; or CLI warn on --redis.
+
+  - candidate_id: INT-002
+    title: Triple alias authority without compile/render seam
+    status: open
+    category: Architecture Fitness
+    lane_sources: [deepening_seams, blast_radius]
+    summary: >
+      model-aliases.yaml + litellm-config.yaml + STABLE_ALIASES frozenset;
+      docs disagree on SoT; planned llg config render never landed.
+    root_cause: Dual-edit sync instead of single write path.
+    evidence:
+      - file: config/llm/model-aliases.yaml
+        line: 3
+        observation: semantic authority claim
+      - file: infra/llm-gateway/litellm-config.yaml
+        line: 4
+        observation: runtime SoT claim
+      - file: src/llg/validate_config.py
+        line: 26
+        observation: hardcoded STABLE_ALIASES
+    scores:
+      severity: 4
+      confidence: 5
+      leverage: 5
+      locality: 2
+      testability: 5
+      blast_radius: 4
+      regression_risk: 3
+      human_decision_risk: 4
+    rollup:
+      priority_score: 10
+      recommended_action: design
+      execution_mode: blocked-needs-human-decision
+      blocked_by: [architecture-sot-choice]
+    recommended_branch: design
+    lenses: [Architecture, Consistency, Connected-impact]
+
+  - candidate_id: INT-003
+    title: Dual proxy .env locations (llg vs root compose)
+    status: open
+    category: Wiring / Integration
+    lane_sources: [graded_integrity, blast_radius]
+    summary: llg loads infra/llm-gateway/.env; root docker compose may load root .env.
+    evidence:
+      - file: src/llg/compose_ops.py
+        line: 42
+        observation: cwd GATEWAY_DIR
+      - file: .env.example
+        line: 1
+        observation: root DX copy without CI sync
+    scores:
+      severity: 3
+      confidence: 5
+      leverage: 4
+      locality: 3
+      testability: 4
+      blast_radius: 3
+      regression_risk: 2
+      human_decision_risk: 2
+    rollup:
+      priority_score: 12
+      recommended_action: direct-fix
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: direct-fix
+
+  - candidate_id: INT-004
+    title: No secret-scan job in CI
+    status: open
+    category: Security
+    lane_sources: [graded_integrity, verification_readiness]
+    summary: gitleaks planned; CI has no secret scan.
+    evidence:
+      - file: .github/workflows/ci.yml
+        line: 1
+        observation: no gitleaks step
+    scores:
+      severity: 3
+      confidence: 5
+      leverage: 4
+      locality: 4
+      testability: 5
+      blast_radius: 2
+      regression_risk: 1
+      human_decision_risk: 1
+    rollup:
+      priority_score: 17
+      recommended_action: fitness-check
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: fitness-check
+
+  - candidate_id: INT-005
+    title: Live ACL/budget/Postgres chaos permanently skipped
+    status: open
+    category: Testing / Fixture / Golden
+    lane_sources: [verification_readiness, graded_integrity]
+    summary: DoD 4/13/14 not machine-provable; stubs skip always.
+    evidence:
+      - file: tests/integration/test_failure_modes_live.py
+        line: 36
+        observation: permanent skip + NotImplementedError
+    scores:
+      severity: 3
+      confidence: 5
+      leverage: 4
+      locality: 3
+      testability: 4
+      blast_radius: 3
+      regression_risk: 2
+      human_decision_risk: 3
+    rollup:
+      priority_score: 11
+      recommended_action: fitness-check
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: fitness-check
+
+  - candidate_id: INT-006
+    title: Environment YAML contracts not loaded by runtime or CI
+    status: open
+    category: Architecture Fitness
+    lane_sources: [deepening_seams, graded_integrity]
+    summary: environments/*.yaml unbound; paper production posture.
+    scores:
+      severity: 3
+      confidence: 5
+      leverage: 4
+      locality: 3
+      testability: 4
+      blast_radius: 3
+      regression_risk: 2
+      human_decision_risk: 4
+    rollup:
+      priority_score: 9
+      recommended_action: design
+      execution_mode: blocked-needs-human-decision
+      blocked_by: [policy-enforce-vs-docs]
+    recommended_branch: design
+
+  - candidate_id: INT-007
+    title: llg reconcile-cost always exit 0
+    status: open
+    category: Architecture Fitness
+    scores:
+      severity: 2
+      confidence: 5
+      leverage: 3
+      locality: 4
+      testability: 5
+      blast_radius: 2
+      regression_risk: 1
+      human_decision_risk: 3
+    rollup:
+      priority_score: 13
+      recommended_action: design
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: design
+
+  - candidate_id: INT-008
+    title: Stale langfuse_otel comment in infra .env.example
+    status: open
+    category: Maintainability
+    scores:
+      severity: 2
+      confidence: 5
+      leverage: 3
+      locality: 5
+      testability: 4
+      blast_radius: 1
+      regression_risk: 1
+      human_decision_risk: 1
+    rollup:
+      priority_score: 16
+      recommended_action: direct-fix
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: direct-fix
+
+  - candidate_id: INT-009
+    title: compose.staging.yaml not validated in CI
+    status: open
+    category: Build / CI
+    scores:
+      severity: 2
+      confidence: 5
+      leverage: 4
+      locality: 5
+      testability: 5
+      blast_radius: 1
+      regression_risk: 1
+      human_decision_risk: 1
+    rollup:
+      priority_score: 15
+      recommended_action: direct-fix
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: direct-fix
+
+  - candidate_id: INT-010
+    title: LITELLM_BASE_URL dual dialect (ops strip /v1 vs app append)
+    status: open
+    category: Maintainability
+    scores:
+      severity: 3
+      confidence: 5
+      leverage: 4
+      locality: 4
+      testability: 5
+      blast_radius: 3
+      regression_risk: 3
+      human_decision_risk: 2
+    rollup:
+      priority_score: 13
+      recommended_action: direct-fix
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: direct-fix
+
+  - candidate_id: INT-011
+    title: DATABASE_URL password not URL-encoded in compose
+    status: open
+    category: Bug
+    scores:
+      severity: 3
+      confidence: 4
+      leverage: 3
+      locality: 4
+      testability: 4
+      blast_radius: 3
+      regression_risk: 2
+      human_decision_risk: 1
+    rollup:
+      priority_score: 12
+      recommended_action: direct-fix
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: direct-fix
+
+  - candidate_id: INT-012
+    title: provider-call-inventory.md stale paths and aliases
+    status: open
+    category: Maintainability
+    scores:
+      severity: 2
+      confidence: 5
+      leverage: 2
+      locality: 5
+      testability: 3
+      blast_radius: 1
+      regression_risk: 1
+      human_decision_risk: 1
+    rollup:
+      priority_score: 14
+      recommended_action: direct-fix
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: direct-fix
+
+  - candidate_id: INT-013
+    title: ADR decision log missing while policy requires ADRs
+    status: open
+    category: Architecture Fitness
+    scores:
+      severity: 3
+      confidence: 5
+      leverage: 3
+      locality: 5
+      testability: 1
+      blast_radius: 1
+      regression_risk: 1
+      human_decision_risk: 4
+    rollup:
+      priority_score: 10
+      recommended_action: design
+      execution_mode: blocked-needs-human-decision
+      blocked_by: [architecture-capture]
+    recommended_branch: design
+
+  - candidate_id: INT-014
+    title: Metadata schema vs pure-Python dual SoT without parity test
+    status: open
+    category: Data / Schema / Contract
+    scores:
+      severity: 3
+      confidence: 4
+      leverage: 3
+      locality: 3
+      testability: 5
+      blast_radius: 3
+      regression_risk: 2
+      human_decision_risk: 2
+    rollup:
+      priority_score: 11
+      recommended_action: fitness-check
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: fitness-check
+
+  - candidate_id: INT-015
+    title: mypy configured but not run in CI
+    status: open
+    category: Build / CI
+    scores:
+      severity: 2
+      confidence: 5
+      leverage: 3
+      locality: 5
+      testability: 5
+      blast_radius: 2
+      regression_risk: 2
+      human_decision_risk: 1
+    rollup:
+      priority_score: 15
+      recommended_action: fitness-check
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: fitness-check
+
+rejected_out_of_scope:
+  - Broad monorepo rewrite / agent framework expansion
+  - Self-host Langfuse HA
+  - Deep audit of leave-sprint / Realmwalkers / IBKR trees (external; report only contracts)
+  - Implementing INT-037b seat isolation in ibkr (different repo; user deferred)
+
+next_loop_state: existing-report-candidate-gate
