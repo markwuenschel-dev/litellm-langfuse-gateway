@@ -7,7 +7,9 @@ Virtual key tokens are returned once on create for the caller to store.
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -17,6 +19,8 @@ __all__ = [
     "KeyClient",
     "default_base_url",
     "require_master_key",
+    "validate_key_models",
+    "sanitize_proxy_error_body",
 ]
 
 
@@ -44,6 +48,75 @@ def require_master_key(explicit: str | None = None) -> str:
             "Do not use the master key in applications; it is admin-only."
         )
     return key
+
+
+# Secret-shaped patterns redacted from proxy error bodies (INT-111).
+_REDACT_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"sk-[A-Za-z0-9_\-]{4,}", re.IGNORECASE),
+    re.compile(r"Bearer\s+\S+", re.IGNORECASE),
+    re.compile(
+        r"(?i)(?:api[_-]?key|secret[_-]?key|access[_-]?token|password|authorization)"
+        r"\s*[:=]\s*\S+"
+    ),
+    # Long base64-looking blobs (JWT segments, opaque tokens).
+    re.compile(r"[A-Za-z0-9+/]{40,}={0,2}"),
+)
+
+
+def sanitize_proxy_error_body(text: str, *, max_len: int = 200) -> str:
+    """Redact secret-shaped content and truncate for safe exception messages.
+
+    Prefer status/path context from the caller; this only sanitizes the body
+    fragment. Never embed raw proxy bodies that may contain keys.
+    """
+    if not text:
+        return ""
+    sanitized = text
+    for pattern in _REDACT_PATTERNS:
+        sanitized = pattern.sub("[REDACTED]", sanitized)
+    sanitized = " ".join(sanitized.split())
+    if len(sanitized) > max_len:
+        sanitized = sanitized[:max_len] + "…"
+    return sanitized
+
+
+def validate_key_models(
+    models: list[str] | None,
+    *,
+    aliases: frozenset[str] | None = None,
+    aliases_path: Path | None = None,
+) -> None:
+    """Ensure each model is a stable alias from model-aliases.yaml (INT-105).
+
+    No-op when models is None or empty (proxy allows unrestricted keys).
+    Raises KeyClientError before any HTTP call when unknown aliases are given.
+    Strict by default — no opt-out.
+    """
+    if not models:
+        return
+
+    if aliases is None:
+        from llg.validate_config import load_stable_aliases
+
+        known = load_stable_aliases(aliases_path) if aliases_path is not None else load_stable_aliases()
+    else:
+        known = aliases
+
+    if not known:
+        raise KeyClientError(
+            "could not load stable aliases from config/llm/model-aliases.yaml; "
+            "cannot validate models allow-list"
+        )
+
+    unknown = sorted({m for m in models if m not in known})
+    if unknown:
+        sample = ", ".join(sorted(known)[:8])
+        more = "…" if len(known) > 8 else ""
+        raise KeyClientError(
+            f"unknown model alias(es): {', '.join(unknown)}. "
+            f"Use stable aliases from config/llm/model-aliases.yaml "
+            f"(known: {sample}{more})"
+        )
 
 
 @dataclass
@@ -84,9 +157,10 @@ class KeyClient:
             raise KeyClientError(f"request failed: {exc}") from exc
 
         if response.status_code >= 400:
-            body = response.text[:500]
+            body = sanitize_proxy_error_body(response.text)
+            detail = f": {body}" if body else ""
             raise KeyClientError(
-                f"{method} {path} → {response.status_code}: {body}",
+                f"{method} {path} → {response.status_code}{detail}",
                 status_code=response.status_code,
             )
 
@@ -95,7 +169,9 @@ class KeyClient:
         try:
             data: Any = response.json()
         except ValueError as exc:
-            raise KeyClientError(f"non-JSON response from {path}: {response.text[:200]}") from exc
+            body = sanitize_proxy_error_body(response.text, max_len=120)
+            detail = f": {body}" if body else ""
+            raise KeyClientError(f"non-JSON response from {path}{detail}") from exc
         if not isinstance(data, (dict, list)):
             raise KeyClientError(f"unexpected JSON type from {path}: {type(data).__name__}")
         return data
@@ -112,7 +188,14 @@ class KeyClient:
         budget_duration: str | None = None,
         tpm: int | None = None,
     ) -> dict[str, Any]:
-        """POST /key/generate. Returns proxy JSON including the virtual `key` once."""
+        """POST /key/generate. Returns proxy JSON including the virtual `key` once.
+
+        When ``models`` is non-empty, each entry must be a stable alias from
+        ``config/llm/model-aliases.yaml`` (via ``load_stable_aliases``).
+        Validation runs before any HTTP call.
+        """
+        validate_key_models(models)
+
         body: dict[str, Any] = {}
         if models is not None:
             body["models"] = models

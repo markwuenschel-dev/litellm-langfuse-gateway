@@ -215,7 +215,10 @@ def keys_create(
     models: str = typer.Option(
         None,
         "--models",
-        help="Comma-separated model allow-list (gateway aliases).",
+        help=(
+            "Comma-separated model allow-list of stable gateway aliases "
+            "(from config/llm/model-aliases.yaml, e.g. llm-general)."
+        ),
     ),
     max_budget: float = typer.Option(
         None,

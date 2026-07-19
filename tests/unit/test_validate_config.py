@@ -6,6 +6,7 @@ from pathlib import Path
 
 import yaml
 
+from llg.paths import DEFAULT_ALIASES as PATHS_DEFAULT_ALIASES
 from llg.paths import REPO_ROOT
 from llg.validate_config import (
     DEFAULT_ALIASES,
@@ -14,6 +15,12 @@ from llg.validate_config import (
     validate_model_aliases,
 )
 from scripts.validate_config import validate_config as scripts_validate_config
+
+
+def test_default_aliases_is_paths_sot() -> None:
+    """INT-113: validate_config re-exports paths.DEFAULT_ALIASES (single SoT)."""
+    assert DEFAULT_ALIASES is PATHS_DEFAULT_ALIASES
+    assert DEFAULT_ALIASES == REPO_ROOT / "config" / "llm" / "model-aliases.yaml"
 
 
 def test_repo_config_is_valid() -> None:

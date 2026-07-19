@@ -9,7 +9,7 @@ from typing import Any
 
 import yaml
 
-from llg.paths import DEFAULT_CONFIG, REPO_ROOT
+from llg.paths import DEFAULT_ALIASES, DEFAULT_CONFIG, REPO_ROOT
 
 __all__ = [
     "DEFAULT_ALIASES",
@@ -21,8 +21,6 @@ __all__ = [
     "validate_config",
     "validate_model_aliases",
 ]
-
-DEFAULT_ALIASES = REPO_ROOT / "config" / "llm" / "model-aliases.yaml"
 
 
 def _require_list(data: dict[str, Any], key: str) -> list[Any]:
