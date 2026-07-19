@@ -78,7 +78,6 @@ async function main(): Promise<void> {
     messages: [{ role: "user", content: "Reply with a single word: pong" }],
     max_tokens: 16,
     // LiteLLM accepts metadata on the request body for Langfuse / logging
-    // @ts-expect-error OpenAI types may not list metadata
     metadata: {
       request_id: requestId,
       service,

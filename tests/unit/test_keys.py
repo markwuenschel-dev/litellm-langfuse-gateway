@@ -204,9 +204,7 @@ def test_cli_create_prints_key_once_not_master(
 
 def test_cli_create_missing_master(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("LITELLM_MASTER_KEY", raising=False)
-    result = runner.invoke(
-        app, ["keys", "create", "--models", "x", "--key-alias", "need-master"]
-    )
+    result = runner.invoke(app, ["keys", "create", "--models", "x", "--key-alias", "need-master"])
     assert result.exit_code == 2
     assert "LITELLM_MASTER_KEY" in (result.stdout + result.stderr)
 

@@ -79,16 +79,10 @@ def run_workflow(
     from llm_client import GatewayClient, GatewayConfig, GatewayError, RequestMetadata
 
     request_id = str(uuid.uuid4())
-    service = (
-        os.environ.get("SERVICE_NAME")
-        or os.environ.get("LLG_SERVICE")
-        or "reference-app"
-    )
+    service = os.environ.get("SERVICE_NAME") or os.environ.get("LLG_SERVICE") or "reference-app"
     feature = "ping"
     environment = (
-        os.environ.get("ENVIRONMENT")
-        or os.environ.get("LLG_ENVIRONMENT")
-        or "development"
+        os.environ.get("ENVIRONMENT") or os.environ.get("LLG_ENVIRONMENT") or "development"
     )
     release = (
         os.environ.get("GIT_SHA")

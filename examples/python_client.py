@@ -68,9 +68,7 @@ def main() -> int:
         )
         return 1
 
-    service = (
-        os.environ.get("SERVICE_NAME") or os.environ.get("LLG_SERVICE") or ""
-    ).strip()
+    service = (os.environ.get("SERVICE_NAME") or os.environ.get("LLG_SERVICE") or "").strip()
     if not service:
         print(
             "Set SERVICE_NAME so Langfuse can attribute this call "
@@ -84,9 +82,7 @@ def main() -> int:
     environment = (
         os.environ.get("ENVIRONMENT") or os.environ.get("LLG_ENVIRONMENT") or "development"
     ).strip()
-    feature = (
-        os.environ.get("FEATURE_NAME") or os.environ.get("LLG_FEATURE") or "chat"
-    ).strip()
+    feature = (os.environ.get("FEATURE_NAME") or os.environ.get("LLG_FEATURE") or "chat").strip()
     release = (
         os.environ.get("GIT_SHA")
         or os.environ.get("RELEASE")
