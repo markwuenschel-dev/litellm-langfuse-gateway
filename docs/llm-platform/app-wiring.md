@@ -97,28 +97,20 @@ Package provides: `llm_client.GatewayClient`, `RequestMetadata`, typed errors.
 
 ```python
 import os
-import uuid
 
-from llm_client import GatewayClient, GatewayConfig, GatewayError, RequestMetadata
+from llm_client import GatewayClient, GatewayConfig, GatewayError
 
 client = GatewayClient(GatewayConfig.from_env())
 model = os.environ.get("LITELLM_MODEL", "llm-general")
-
-meta = RequestMetadata(
-    request_id=str(uuid.uuid4()),
-    service=os.environ.get("SERVICE_NAME", "myapp"),
-    feature="chat",
-    environment=os.environ.get("ENVIRONMENT", "development"),
-    release=os.environ.get("GIT_SHA", "dev"),
-    model_alias=model,
-)
+# Set SERVICE_NAME in the app env — chat() auto-attaches RequestMetadata.from_env
+# when metadata is omitted. Prefer an explicit name over the unattributed default.
 
 try:
     with client:
         result = client.chat(
             model=model,
             messages=[{"role": "user", "content": "Hello"}],
-            metadata=meta,
+            # optional: metadata=RequestMetadata(...) for feature/trace overrides
         )
     print(result["choices"][0]["message"]["content"])
 except GatewayError as exc:
@@ -128,21 +120,39 @@ except GatewayError as exc:
 
 ### Alternative: raw OpenAI SDK
 
+Raw SDK clients **do not** send origin fields unless you pass them. Always set
+`SERVICE_NAME` and include `metadata` (or use `GatewayClient`, which does this
+for you). See [call-attribution.md](./call-attribution.md).
+
 ```python
 import os
+import uuid
 from openai import OpenAI
+
+model = os.environ.get("LITELLM_MODEL", "llm-general")
+service = os.environ["SERVICE_NAME"]  # required for attribution
 
 client = OpenAI(
     api_key=os.environ["LITELLM_VIRTUAL_KEY"],
     base_url=os.environ.get("LITELLM_BASE_URL", "http://localhost:4000/v1"),
 )
 client.chat.completions.create(
-    model=os.environ.get("LITELLM_MODEL", "llm-general"),
+    model=model,
     messages=[{"role": "user", "content": "Hello"}],
+    extra_body={
+        "metadata": {
+            "request_id": str(uuid.uuid4()),
+            "service": service,
+            "feature": "chat",
+            "environment": os.environ.get("ENVIRONMENT", "development"),
+            "release": os.environ.get("GIT_SHA", "dev"),
+            "model_alias": model,
+        }
+    },
 )
 ```
 
-Runnable samples: `examples/reference_workflow.py` (full shape), `examples/python_client.py` (minimal).
+Runnable samples: `examples/reference_workflow.py` (full shape), `examples/python_client.py` (minimal + metadata).
 
 ---
 
@@ -166,7 +176,7 @@ const model = process.env.LITELLM_MODEL ?? "llm-general";
 const response = await client.chat.completions.create({
   model,
   messages: [{ role: "user", content: "Hello" }],
-  // Optional: gateway metadata for logging / Langfuse correlation (LiteLLM accepts extra body fields)
+  // Required for call attribution (LiteLLM → Langfuse). Prefer a real SERVICE_NAME.
   // @ts-expect-error OpenAI types may not list metadata
   metadata: {
     request_id: crypto.randomUUID(),

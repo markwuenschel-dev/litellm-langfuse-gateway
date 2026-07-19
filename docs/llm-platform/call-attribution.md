@@ -85,9 +85,13 @@ uv run llg keys create `
   --metadata '{\"service\":\"myapp\",\"environment\":\"development\"}'
 ```
 
+`--key-alias` is **required** (use `--allow-anonymous-key` only as break-glass).
+
 - One key per **service × environment**.
 - Never share one virtual key across unrelated apps.
 - Never put the **master** key in an app (Langfuse will not tell apps apart).
+- Local caller template: copy `infra/llm-gateway/.env.app.example` → `.env.app`
+  (gitignored), set `SERVICE_NAME` + virtual key.
 
 ## Langfuse UI — practical filters
 
