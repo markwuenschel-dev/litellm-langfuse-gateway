@@ -120,9 +120,9 @@ def health(
         )
         raise typer.Exit(2)
 
-    resolved = base_url or os.environ.get("LITELLM_BASE_URL", "http://localhost:4000").removesuffix(
-        "/v1"
-    )
+    from llm_client.proxy_url import proxy_root
+
+    resolved = proxy_root(base_url)
     code, message = check_health(resolved, path=path, timeout=timeout)
     if code == 0:
         typer.echo(message)
@@ -403,10 +403,9 @@ def smoke(
         if base_url:
             from dataclasses import replace
 
-            root = base_url.rstrip("/")
-            if not root.endswith("/v1"):
-                root = f"{root}/v1"
-            cfg = replace(cfg, base_url=root)
+            from llm_client.proxy_url import openai_base
+
+            cfg = replace(cfg, base_url=openai_base(base_url))
     except Exception as exc:
         typer.secho(f"config error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(2) from exc
@@ -467,7 +466,7 @@ def reconcile_cost(
     Evidence template: docs/evidence/templates/cost-recon.md
     """
     rid = run_id or "(none)"
-    typer.echo("llg reconcile-cost — process stub (WP15)")
+    typer.echo("llg reconcile-cost — process guide (WP15)")
     typer.echo(f"run_id={rid}")
     typer.echo("")
     typer.echo(
@@ -476,23 +475,25 @@ def reconcile_cost(
     )
     typer.echo("Tolerance proposal: ±5% or ±$0.01 per call group (whichever larger).")
     typer.echo("")
+    typer.echo("See: docs/llm-platform/cost-reconciliation.md")
+    typer.echo("Evidence template: docs/evidence/templates/cost-recon.md")
+    # Exit non-zero until automated fetch exists — DoD #15 cannot be "green" from a stub.
     if os.environ.get("LLG_LIVE") != "1":
         typer.secho(
             "UNPROVEN: LLG_LIVE is not set. No live spend data was fetched. "
-            "This command does not fabricate reconciliation tables.",
+            "This command does not fabricate reconciliation tables. Exit 2.",
             fg=typer.colors.YELLOW,
             err=True,
         )
-    else:
-        typer.secho(
-            "LLG_LIVE=1 is set, but automated multi-system fetch is not implemented. "
-            "Capture provider / LiteLLM / Langfuse figures manually and fill "
-            "docs/evidence/templates/cost-recon.md.",
-            fg=typer.colors.YELLOW,
-            err=True,
-        )
-    typer.echo("See: docs/llm-platform/cost-reconciliation.md")
-    raise typer.Exit(0)
+        raise typer.Exit(2)
+    typer.secho(
+        "UNPROVEN: LLG_LIVE=1 is set, but automated multi-system fetch is not implemented. "
+        "Capture provider / LiteLLM / Langfuse figures manually and fill "
+        "docs/evidence/templates/cost-recon.md. Exit 2.",
+        fg=typer.colors.YELLOW,
+        err=True,
+    )
+    raise typer.Exit(2)
 
 
 @keys_app.command("revoke")

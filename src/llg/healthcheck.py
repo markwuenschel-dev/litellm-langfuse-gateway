@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 
 import httpx
@@ -33,10 +32,12 @@ def check_health(
 
 
 def main(argv: list[str] | None = None) -> int:
+    from llm_client.proxy_url import proxy_root
+
     parser = argparse.ArgumentParser(description="Health-check the LiteLLM proxy.")
     parser.add_argument(
         "--base-url",
-        default=os.environ.get("LITELLM_BASE_URL", "http://localhost:4000").removesuffix("/v1"),
+        default=proxy_root(),
         help="Proxy base URL without /v1 (default: http://localhost:4000)",
     )
     parser.add_argument(
