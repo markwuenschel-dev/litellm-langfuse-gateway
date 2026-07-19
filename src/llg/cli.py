@@ -241,9 +241,8 @@ def keys_create(
         None,
         "--key-alias",
         help=(
-            "Human-readable key alias (Admin UI / spend). "
-            "Strongly recommended: service-env e.g. myapp-dev — this is how you "
-            "identify who owns traffic when metadata is missing."
+            "Human-readable key alias (Admin UI / spend). Required unless "
+            "--allow-anonymous-key. Use service-env e.g. myapp-dev."
         ),
     ),
     budget_duration: str = typer.Option(
@@ -258,6 +257,11 @@ def keys_create(
             'JSON object stored on the key (e.g. \'{"service":"myapp","environment":"dev"}\'). '
             "Defaults from --key-alias when omitted."
         ),
+    ),
+    allow_anonymous_key: bool = typer.Option(
+        False,
+        "--allow-anonymous-key",
+        help="Allow create without --key-alias (not recommended; spend will not name the owner).",
     ),
     base_url: str = typer.Option(
         None,
@@ -278,6 +282,16 @@ def keys_create(
     ),
 ) -> None:
     """Create a virtual key (POST /key/generate). Prints the key once; do not commit it."""
+    if not (key_alias or "").strip() and not allow_anonymous_key:
+        typer.secho(
+            "error: --key-alias is required so spend and Admin UI name the owner.\n"
+            "  Example: --key-alias myapp-dev\n"
+            "  Break-glass only: --allow-anonymous-key",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(2)
+
     meta: dict[str, Any] | None = None
     if metadata:
         try:
@@ -294,9 +308,8 @@ def keys_create(
         meta = {"service": key_alias, "environment": "development"}
     else:
         typer.secho(
-            "warning: no --key-alias / --metadata — spend and Langfuse will not "
-            "name this key. Prefer: --key-alias myapp-dev "
-            '--metadata \'{"service":"myapp","environment":"development"}\'',
+            "warning: anonymous key — spend will not name an owner. "
+            "Set SERVICE_NAME on every caller.",
             fg=typer.colors.YELLOW,
             err=True,
         )
