@@ -98,7 +98,7 @@ class KeyClient:
             raise KeyClientError(f"non-JSON response from {path}: {response.text[:200]}") from exc
         if not isinstance(data, (dict, list)):
             raise KeyClientError(f"unexpected JSON type from {path}: {type(data).__name__}")
-        return data  # type: ignore[return-value]
+        return data
 
     def create(
         self,
