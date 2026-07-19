@@ -28,7 +28,8 @@ Related: [application-migration.md](./application-migration.md) (inventory + cut
 | `LITELLM_VIRTUAL_KEY` | **Yes** | Must start with `sk-`; from `llg keys create` |
 | `LITELLM_MODEL` | Optional | Default `llm-general` |
 | `LLG_DISALLOW_MASTER` | Optional | Default on — refuse master key as app key |
-| `SERVICE_NAME` / `ENVIRONMENT` / `GIT_SHA` | Optional | For metadata |
+| `SERVICE_NAME` / `ENVIRONMENT` / `GIT_SHA` | **Strongly recommended** | Call origin in Langfuse (`GatewayClient` auto-sends metadata). See [call-attribution.md](./call-attribution.md) |
+| `LLG_REQUIRE_ATTRIBUTION` | Optional | If `1`, refuse chat when `service` is unattributed |
 | Provider API keys | **No** | Proxy Compose `.env` only |
 | `LITELLM_MASTER_KEY` | **No** | Admin / `llg keys` only |
 | `LITELLM_SALT_KEY` | **No** | Proxy encryption only |
@@ -187,6 +188,13 @@ Runnable sample: `examples/ts_client.ts` (`pnpm run example:ts`).
 ### Gateway generations (already on)
 
 The proxy exports each completion to Langfuse (classic `langfuse` success/failure callback). You do **not** need to re-log the same generation in app code.
+
+### Call attribution (who hit the gateway?)
+
+**Full guide:** [call-attribution.md](./call-attribution.md)
+
+`GatewayClient.chat()` **always** attaches metadata (explicit or from env). Raw
+OpenAI SDK calls do not unless you pass `metadata` / `extra_body`.
 
 ### Required metadata (when using `RequestMetadata` / contract)
 

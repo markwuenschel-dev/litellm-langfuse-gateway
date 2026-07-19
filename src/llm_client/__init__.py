@@ -15,7 +15,12 @@ from llm_client.errors import (
     ModelAccessDenied,
     ProviderUnavailable,
 )
-from llm_client.metadata import RequestMetadata, load_schema, validate_metadata
+from llm_client.metadata import (
+    UNATTRIBUTED_SERVICE,
+    RequestMetadata,
+    load_schema,
+    validate_metadata,
+)
 from llm_client.proxy_url import openai_base, proxy_root
 
 __all__ = [
@@ -32,6 +37,7 @@ __all__ = [
     "ModelAccessDenied",
     "ProviderUnavailable",
     "RequestMetadata",
+    "UNATTRIBUTED_SERVICE",
     "disallow_master_key",
     "load_schema",
     "openai_base",

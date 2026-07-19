@@ -240,7 +240,11 @@ def keys_create(
     key_alias: str = typer.Option(
         None,
         "--key-alias",
-        help="Human-readable key alias (shown in Admin UI / list).",
+        help=(
+            "Human-readable key alias (Admin UI / spend). "
+            "Strongly recommended: service-env e.g. myapp-dev — this is how you "
+            "identify who owns traffic when metadata is missing."
+        ),
     ),
     budget_duration: str = typer.Option(
         None,
@@ -250,7 +254,10 @@ def keys_create(
     metadata: str = typer.Option(
         None,
         "--metadata",
-        help='Optional JSON object metadata (e.g. \'{"service":"ref-app","environment":"dev"}\').',
+        help=(
+            'JSON object stored on the key (e.g. \'{"service":"myapp","environment":"dev"}\'). '
+            "Defaults from --key-alias when omitted."
+        ),
     ),
     base_url: str = typer.Option(
         None,
@@ -282,6 +289,17 @@ def keys_create(
             typer.secho("--metadata must be a JSON object", fg=typer.colors.RED, err=True)
             raise typer.Exit(2)
         meta = parsed
+    elif key_alias:
+        # Default key metadata so Admin UI / spend lists show ownership.
+        meta = {"service": key_alias, "environment": "development"}
+    else:
+        typer.secho(
+            "warning: no --key-alias / --metadata — spend and Langfuse will not "
+            "name this key. Prefer: --key-alias myapp-dev "
+            '--metadata \'{"service":"myapp","environment":"development"}\'',
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
 
     client = _key_client(base_url, master_key, timeout)
     try:
@@ -325,6 +343,11 @@ def keys_create(
         for label, field in (("token_id", "token_id"), ("key_name", "key_name")):
             if result.get(field):
                 typer.echo(f"{label}={result[field]}", err=True)
+    typer.echo(
+        "Attribution: set SERVICE_NAME in the app env and prefer GatewayClient "
+        "(always sends metadata). See docs/llm-platform/call-attribution.md",
+        err=True,
+    )
     typer.echo(str(token))
 
 

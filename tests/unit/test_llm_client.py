@@ -130,6 +130,50 @@ def test_chat_success_with_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
     assert captured["body"]["metadata"]["model_alias"] == "llm-general"
 
 
+def test_chat_auto_metadata_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """When metadata is omitted, GatewayClient still sends origin fields."""
+    monkeypatch.setenv("SERVICE_NAME", "billing-api")
+    monkeypatch.setenv("ENVIRONMENT", "staging")
+    monkeypatch.setenv("GIT_SHA", "abc1234")
+    monkeypatch.delenv("LLG_REQUIRE_ATTRIBUTION", raising=False)
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(request.content.decode())
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"role": "assistant", "content": "ok"}}]},
+        )
+
+    cfg = GatewayConfig(base_url="http://proxy.test/v1", virtual_key="sk-v")
+    client = GatewayClient(cfg, transport=_transport(handler))
+    client.chat(model="llm-general", messages=[{"role": "user", "content": "x"}])
+    client.close()
+
+    md = captured["body"]["metadata"]
+    assert md["service"] == "billing-api"
+    assert md["environment"] == "staging"
+    assert md["release"] == "abc1234"
+    assert md["model_alias"] == "llm-general"
+    assert md["feature"] == "chat"
+    assert "request_id" in md
+
+
+def test_chat_require_attribution_blocks_unattributed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SERVICE_NAME", raising=False)
+    monkeypatch.delenv("LLG_SERVICE", raising=False)
+    monkeypatch.setenv("LLG_REQUIRE_ATTRIBUTION", "1")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"choices": []})
+
+    cfg = GatewayConfig(base_url="http://proxy.test/v1", virtual_key="sk-v")
+    client = GatewayClient(cfg, transport=_transport(handler))
+    with pytest.raises(GatewayConfigError, match="unattributed"):
+        client.chat(model="llm-general", messages=[{"role": "user", "content": "x"}])
+    client.close()
+
+
 def test_chat_auth_error() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
