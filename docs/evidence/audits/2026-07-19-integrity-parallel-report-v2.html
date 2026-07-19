@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Codebase Integrity Report v2 — litellm-langfuse-gateway — 2026-07-19</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #f7f5f1; color: #1a1a1a; font-family: "Public Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.6; }
+  a { color: #3730a3; }
+  code { font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+  h1,h2,h3 { font-family: "Space Grotesk", sans-serif; font-weight: 600; letter-spacing: -0.02em; }
+</style>
+</head>
+<body style="max-width:960px;margin:0 auto;padding:32px 24px 80px;">
+
+<p style="font-family:IBM Plex Mono,monospace;font-size:11px;color:#666;margin:0 0 8px;">
+  CODEBASE INTEGRITY · PARALLEL REPORT v2 · READ-ONLY · 2026-07-19 · post-flywheel
+</p>
+<h1 style="font-size:28px;margin:0 0 8px;">litellm-langfuse-gateway</h1>
+<p style="margin:0 0 24px;color:#444;">
+  Repo Audit Swarm after PR #2–#7 (INT-001…015 closed). Lanes: deepening · graded integrity · blast radius · verification readiness.
+  Hermetic baseline @ <code>main@0d8ea41</code>: <code>ruff</code> · <code>pytest tests/unit</code> · <code>mypy</code> · <code>llg config validate</code> all pass.
+  Mode: <strong>--parallel-report</strong> (no production edits; stop at candidate gate).
+</p>
+
+<section style="margin-bottom:32px;padding:20px;background:#fff;border:1px solid #e5e2db;border-radius:4px;">
+  <h2 style="margin-top:0;font-size:18px;">1. Executive summary</h2>
+  <p><strong>Confirmed:</strong> Hermetic spine is strong (pins, gitleaks, mypy, alias sync via <code>load_stable_aliases</code>, env-origin CI, honest <code>--redis-service</code>, honest <code>reconcile-cost</code> exit 2, ADRs 0001–0006, metadata field parity, live ACL/budget red-capable under <code>LLG_LIVE</code>).</p>
+  <p><strong>Residual risk:</strong> operator-facing false contracts (Redis shared rpm/tpm still in k8s/operating-guide), evidence docs lag code, verification readiness still weak for chaos DoD 13/14 and empty live evidence index, client/key provision seams not fully bound to alias SoT.</p>
+  <p style="margin-bottom:0;"><strong>Unknown:</strong> live stack not re-run this audit; external sibling apps not scanned.</p>
+</section>
+
+<section style="margin-bottom:32px;padding:20px;background:#fff;border:1px solid #e5e2db;border-radius:4px;">
+  <h2 style="margin-top:0;font-size:18px;">2. Overall repo grade</h2>
+  <p style="font-size:42px;font-family:Space Grotesk,sans-serif;font-weight:700;color:#3730a3;margin:8px 0;">B</p>
+  <p style="margin:0;color:#444;">Up from prior B−. Hermetic integrity is trustworthy; live/chaos DoD rows and residual ops wording prevent A. Grade from lane scorecards below.</p>
+</section>
+
+<section style="margin-bottom:32px;">
+  <h2 style="font-size:18px;">3. Lane scorecards</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;">
+    <thead>
+      <tr style="text-align:left;border-bottom:2px solid #1a1a1a;">
+        <th style="padding:8px;">Lane</th>
+        <th style="padding:8px;">Health</th>
+        <th style="padding:8px;">Focus</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid #e5e2db;"><td style="padding:8px;font-family:IBM Plex Mono,monospace;">deepening_seams</td><td style="padding:8px;color:#b45309;">3/5</td><td style="padding:8px;">False contracts; metadata/key/client shallow enforcement</td></tr>
+      <tr style="border-bottom:1px solid #e5e2db;"><td style="padding:8px;font-family:IBM Plex Mono,monospace;">graded_integrity</td><td style="padding:8px;color:#047857;">4/5</td><td style="padding:8px;">Big holes closed; residual doc/k8s + chaos skip</td></tr>
+      <tr style="border-bottom:1px solid #e5e2db;"><td style="padding:8px;font-family:IBM Plex Mono,monospace;">blast_radius</td><td style="padding:8px;color:#047857;">4/5</td><td style="padding:8px;">Core gates green; ADR 0004 wording drift</td></tr>
+      <tr><td style="padding:8px;font-family:IBM Plex Mono,monospace;">verification_readiness</td><td style="padding:8px;color:#b45309;">3/5</td><td style="padding:8px;">Hermetic strong; live capability medium; evidence weak</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section style="margin-bottom:32px;">
+  <h2 style="font-size:18px;">4. Top merged candidates</h2>
+  <ol style="padding-left:20px;">
+    <li style="margin-bottom:8px;"><code>INT-101</code> Redis shared-limit claims in k8s / operating-guide / staging (ADR 0004)</li>
+    <li style="margin-bottom:8px;"><code>INT-102</code> pin-spike compose outside CI digest pin list</li>
+    <li style="margin-bottom:8px;"><code>INT-103</code> <code>model_alias</code> not cross-checked against <code>model</code> in GatewayClient</li>
+    <li style="margin-bottom:8px;"><code>INT-104</code> Evidence/MILESTONE lag flywheel reality</li>
+    <li style="margin-bottom:8px;"><code>INT-105</code> <code>llg keys create --models</code> unbound from stable aliases</li>
+    <li style="margin-bottom:8px;"><code>INT-112</code> No dependency-audit CI job</li>
+    <li style="margin-bottom:8px;"><code>INT-107</code> No controlled live-smoke workflow</li>
+    <li style="margin-bottom:8px;"><code>INT-108</code> Postgres/Langfuse chaos permanent skip</li>
+  </ol>
+</section>
+
+<section style="margin-bottom:32px;">
+  <h2 style="font-size:18px;">5. Candidate ledger (summary)</h2>
+  <p style="font-size:13px;color:#666;">Priority = (sev+conf+lev+loc+test) − (blast+regr+human). Full YAML: <code>2026-07-19-integrity-candidate-ledger-v2.yaml</code>. Select one ID.</p>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b91c1c;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-101</code> Redis shared-limit ops wording (ADR 0004 drift)</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Wiring · status: <strong>open</strong> · priority: <strong>17</strong></p>
+    <p style="margin:0 0 8px;"><strong>Friction:</strong> Operators still read “Redis required for shared rpm/tpm” in k8s + operating-guide while product pin only offers service-only Redis.</p>
+    <p style="margin:0;"><strong>Branch:</strong> direct-fix · Lenses: Wiring, Consistency · Check: hermetic wording gate</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b91c1c;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-102</code> pin-spike digests not in CI pin list</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Build/CI · priority: <strong>17</strong></p>
+    <p style="margin:0;"><strong>Branch:</strong> direct-fix (extend <code>ci.yml</code> file list)</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b45309;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-103</code> model_alias echo not enforced</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Contract · priority: <strong>16</strong></p>
+    <p style="margin:0;"><strong>Branch:</strong> fitness-check on GatewayClient.chat</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b45309;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-104</code> Evidence docs lag code</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Maintainability · priority: <strong>15</strong></p>
+    <p style="margin:0;"><strong>Branch:</strong> direct-fix (MILESTONE / matrix / index honesty)</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b45309;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-105</code> keys create --models unbound</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">Category: Wiring · priority: <strong>15</strong></p>
+    <p style="margin:0;"><strong>Branch:</strong> fitness-check against <code>load_stable_aliases()</code></p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #047857;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-106</code> inventory path <code>reference_workflow/</code></h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">priority: <strong>14</strong> · quick win</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b45309;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-107</code> No live-smoke workflow</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">priority: <strong>13</strong> · fitness-check</p>
+  </article>
+
+  <article style="margin:16px 0;padding:16px;background:#fff;border-left:4px solid #b45309;border:1px solid #e5e2db;">
+    <h3 style="margin:0 0 8px;font-size:16px;"><code>INT-108</code> Chaos DoD 13/14 permanent skip</h3>
+    <p style="margin:0 0 8px;font-size:13px;color:#666;">priority: <strong>13</strong> · compose chaos harness</p>
+  </article>
+
+  <p style="font-size:13px;color:#666;">Also open: INT-109…117 (metadata depth parity, budget assert soft edge, KeyClient body redact, dep-audit CI, DEFAULT_ALIASES import, plan archive banner, redis-cli argv password, cost recon design, optional alias deepen). See YAML ledger.</p>
+</section>
+
+<section style="margin-bottom:32px;">
+  <h2 style="font-size:18px;">6–7. Lane findings / cross-lane duplicates</h2>
+  <p><strong>Duplicate group A — Redis wording:</strong> deepening F1 · graded INT-204/205 · blast INT-301 → merged as <code>INT-101</code>.</p>
+  <p><strong>Duplicate group B — chaos skips:</strong> graded INT-201 · verification INT-403 → <code>INT-108</code>.</p>
+  <p><strong>Duplicate group C — live CI absence:</strong> graded INT-212 · verification INT-401 → <code>INT-107</code>.</p>
+  <p><strong>Duplicate group D — evidence lag:</strong> graded INT-206 · verification INT-402/405 → <code>INT-104</code>.</p>
+</section>
+
+<section style="margin-bottom:32px;">
+  <h2 style="font-size:18px;">8. Human-decision blockers</h2>
+  <p>None hard-blocking residual candidates at human_decision_risk ≥ 4. Soft design forks:</p>
+  <ul>
+    <li><strong>INT-116 / INT-117</strong> — cost-recon data sources; optional alias render/consumers enforce (policy/architecture, not blockers for INT-101–106).</li>
+  </ul>
+</section>
+
+<section style="margin-bottom:32px;">
+  <h2 style="font-size:18px;">9. Quick wins</h2>
+  <ul>
+    <li><code>INT-101</code> wording alignment (high pri, local)</li>
+    <li><code>INT-102</code> one-line CI pin file list</li>
+    <li><code>INT-106</code> inventory path fix</li>
+    <li><code>INT-113</code> import DEFAULT_ALIASES from paths</li>
+  </ul>
+</section>
+
+<section style="margin-bottom:32px;">
+  <h2 style="font-size:18px;">10. High-leverage deep work</h2>
+  <ul>
+    <li><code>INT-103</code> / <code>INT-105</code> — bind client + keys to alias/metadata contracts</li>
+    <li><code>INT-107</code> / <code>INT-108</code> — live + chaos verification harnesses</li>
+  </ul>
+</section>
+
+<section style="margin-bottom:32px;">
+  <h2 style="font-size:18px;">11. Unsafe-to-auto-execute</h2>
+  <p><code>INT-116</code> (cost recon multi-system), <code>INT-117</code> (render seam) — prefer design before code.</p>
+</section>
+
+<section style="margin-bottom:32px;">
+  <h2 style="font-size:18px;">12. Verification readiness</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <tr style="border-bottom:1px solid #e5e2db;"><td style="padding:8px;">Hermetic CI</td><td style="padding:8px;color:#047857;">Strong — trust scaffold claims</td></tr>
+    <tr style="border-bottom:1px solid #e5e2db;"><td style="padding:8px;">Live red-capable</td><td style="padding:8px;color:#b45309;">Medium — ACL/budget/health/keys; no workflow</td></tr>
+    <tr style="border-bottom:1px solid #e5e2db;"><td style="padding:8px;">Chaos DoD 13/14</td><td style="padding:8px;color:#b91c1c;">Weak — permanent skip</td></tr>
+    <tr><td style="padding:8px;">Evidence index</td><td style="padding:8px;color:#b91c1c;">Weak — empty live runs table</td></tr>
+  </table>
+</section>
+
+<section style="margin-bottom:32px;">
+  <h2 style="font-size:18px;">13. Recommended queue</h2>
+  <ol style="padding-left:20px;font-family:IBM Plex Mono,monospace;font-size:13px;">
+    <li>INT-101 (pri 17)</li>
+    <li>INT-102 (pri 17)</li>
+    <li>INT-103 (pri 16)</li>
+    <li>INT-104 (pri 15)</li>
+    <li>INT-105 (pri 15)</li>
+    <li>INT-112 / INT-106 quick wins</li>
+    <li>INT-107 · INT-108 verification depth</li>
+  </ol>
+  <p style="margin-top:16px;color:#666;font-size:13px;">Prior ledger INT-001…015: <strong>do not re-select</strong> unless regression proven. Next loop state: candidate gate on this v2 ledger.</p>
+</section>
+
+<p style="font-size:12px;color:#666;font-family:IBM Plex Mono,monospace;">
+  Report only · no production code changed · ledger: docs/evidence/audits/2026-07-19-integrity-candidate-ledger-v2.yaml
+</p>
+</body>
+</html>
