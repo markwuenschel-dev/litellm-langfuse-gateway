@@ -505,7 +505,7 @@ candidates:
 
   - candidate_id: INT-117
     title: Dual-edit alias residual — no config render (accepted; optional deepen)
-    status: needs-human-decision
+    status: shipped
     category: Architecture Fitness
     lane_sources: [deepening_seams, blast_radius]
     summary: >

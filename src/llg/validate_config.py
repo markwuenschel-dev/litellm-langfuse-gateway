@@ -16,6 +16,7 @@ __all__ = [
     "DEFAULT_CONFIG",
     "REPO_ROOT",
     "STABLE_ALIASES",
+    "load_registry_names",
     "load_stable_aliases",
     "main",
     "validate_config",
@@ -43,11 +44,18 @@ def _load_yaml_mapping(path: Path) -> tuple[dict[str, Any] | None, list[str]]:
     return raw, []
 
 
-def load_stable_aliases(path: Path = DEFAULT_ALIASES) -> frozenset[str]:
-    """Stable app-facing aliases = keys under ``aliases:`` in model-aliases.yaml.
+def _registry_role(entry: dict[str, Any]) -> str:
+    """Return registry_role for an alias entry (default ``app``)."""
+    role = entry.get("registry_role", "app")
+    if role is None or role == "":
+        return "app"
+    return str(role)
 
-    INT-002: no hardcoded frozenset. Semantic write SoT is model-aliases.yaml;
-    litellm-config.yaml remains runtime model_list SoT and must expose each alias.
+
+def load_registry_names(path: Path = DEFAULT_ALIASES) -> frozenset[str]:
+    """All semantic registry names (app + internal) under ``aliases:``.
+
+    INT-117: equality uses this full set vs ``model_list`` model_name values.
     """
     raw, errors = _load_yaml_mapping(path)
     if errors or raw is None:
@@ -56,6 +64,31 @@ def load_stable_aliases(path: Path = DEFAULT_ALIASES) -> frozenset[str]:
     if not isinstance(aliases, dict) or not aliases:
         return frozenset()
     return frozenset(str(name) for name in aliases if isinstance(name, str) and name.strip())
+
+
+def load_stable_aliases(path: Path = DEFAULT_ALIASES) -> frozenset[str]:
+    """App-facing stable aliases = ``aliases:`` keys with registry_role app (default).
+
+    INT-002 / INT-117: semantic write SoT is model-aliases.yaml.
+    Internal registry entries (registry_role: internal) are excluded from the
+    app key / virtual-key allowlist but still participate in model_list equality.
+    """
+    raw, errors = _load_yaml_mapping(path)
+    if errors or raw is None:
+        return frozenset()
+    aliases = raw.get("aliases")
+    if not isinstance(aliases, dict) or not aliases:
+        return frozenset()
+    names: set[str] = set()
+    for name, entry in aliases.items():
+        if not isinstance(name, str) or not name.strip():
+            continue
+        if not isinstance(entry, dict):
+            continue
+        if _registry_role(entry) != "app":
+            continue
+        names.add(name)
+    return frozenset(names)
 
 
 # Derived at import for callers that still import STABLE_ALIASES (scripts, tests).
@@ -117,6 +150,17 @@ def validate_model_aliases(path: Path) -> list[str]:
         ):
             errors.append(f"{prefix}: consumers must be a list of strings when present")
 
+        # INT-117: registry_role app|internal; internal needs exemption_rationale.
+        role = _registry_role(entry)
+        if role not in ("app", "internal"):
+            errors.append(f"{prefix}: registry_role must be 'app' or 'internal' (got {role!r})")
+        elif role == "internal":
+            rationale = entry.get("exemption_rationale")
+            if not isinstance(rationale, str) or not rationale.strip():
+                errors.append(
+                    f"{prefix}: exemption_rationale is required when registry_role is 'internal'"
+                )
+
     if "llm-general" not in names:
         errors.append("missing required default alias 'llm-general'")
 
@@ -134,8 +178,10 @@ def validate_config(
     with provider prefix, and api_key only as os.environ/... (no literal keys).
 
     When ``aliases_path`` is provided, or when ``path`` is the repo default
-    config and ``DEFAULT_ALIASES`` exists, also enforces that every alias from
-    the alias contract is present in model_list with matching route and env key.
+    config and ``DEFAULT_ALIASES`` exists, enforces **set equality** between
+    semantic registry names and ``model_list`` model_name values (INT-117):
+    every registry alias is in model_list (with matching route/env), and every
+    model_list entry is declared in the registry (no undeclared runtime-only routes).
     """
     errors: list[str] = []
 
@@ -240,6 +286,8 @@ def validate_config(
             assert alias_raw is not None
             aliases = alias_raw["aliases"]
             assert isinstance(aliases, dict)
+            registry_names = {str(n) for n in aliases if isinstance(n, str) and n.strip()}
+            # Forward: registry ⊆ model_list (with route/env match)
             for alias_name, entry in aliases.items():
                 if not isinstance(entry, dict):
                     continue
@@ -269,6 +317,15 @@ def validate_config(
                             f"alias '{alias_name}': api_key must be "
                             f"{expected_ref!r} (got {actual_key!r})"
                         )
+            # Reverse (INT-117): model_list ⊆ registry — no undeclared runtime-only routes
+            for model_name in sorted(names):
+                if model_name not in registry_names:
+                    errors.append(
+                        f"model_list has undeclared runtime-only route "
+                        f"'{model_name}' (not in {resolved_aliases.name}); "
+                        f"declare it under aliases: with registry_role app|internal "
+                        f"(internal requires exemption_rationale)"
+                    )
 
     return errors
 
