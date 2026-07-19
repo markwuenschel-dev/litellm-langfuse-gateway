@@ -80,10 +80,10 @@ Treat **`LITELLM_SALT_KEY` as permanent**. Pin images by **tag + digest** (see `
 
 ```bash
 cp infra/llm-gateway/.env.example infra/llm-gateway/.env
-# or: cp .env.example .env   # root copy points at the same contract
+# Canonical only — do not create a repo-root .env for the gateway stack
 ```
 
-In `infra/llm-gateway/.env` (or root `.env` used by Compose):
+In `infra/llm-gateway/.env` (Compose include + `llg up` both use this path):
 
 1. Set `LITELLM_MASTER_KEY`, `LITELLM_SALT_KEY`, `POSTGRES_PASSWORD`, `DATABASE_URL` (generate with `uv run llg secrets generate` — emits URL-encoded `DATABASE_URL`).
 2. Set provider keys you need (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`, …).
@@ -208,7 +208,7 @@ Apps should prefer **aliases**, not raw vendor model strings. Fallbacks are **of
 | --- | --- |
 | `infra/llm-gateway/compose.yaml` | Canonical LiteLLM + Postgres |
 | `infra/llm-gateway/litellm-config.yaml` | Models, callbacks, timeouts |
-| `infra/llm-gateway/.env.example` | **Proxy** secrets template |
+| `infra/llm-gateway/.env.example` | **Proxy** secrets template (canonical; root `.env.example` is pointer-only) |
 | `infra/llm-gateway/.env.app.example` | **App** env template |
 | `config/llm/model-aliases.yaml` | Alias contract |
 | `config/llm/metadata-contract.schema.json` | Request metadata schema |

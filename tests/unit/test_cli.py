@@ -89,6 +89,28 @@ def test_smoke_skips_without_llg_live(monkeypatch) -> None:  # type: ignore[no-u
     assert "SKIP" in combined or "LLG_LIVE" in combined
 
 
+def test_warn_root_env_without_gateway(tmp_path, monkeypatch, capsys) -> None:  # type: ignore[no-untyped-def]
+    """Hermetic: warn when root .env exists and gateway .env does not; no invent."""
+    from llg import compose_ops
+
+    repo = tmp_path / "repo"
+    gateway = repo / "infra" / "llm-gateway"
+    gateway.mkdir(parents=True)
+    (repo / ".env").write_text("# root only\n", encoding="utf-8")
+    monkeypatch.setattr(compose_ops, "REPO_ROOT", repo)
+    monkeypatch.setattr(compose_ops, "GATEWAY_DIR", gateway)
+
+    compose_ops.warn_if_root_env_without_gateway()
+    err = capsys.readouterr().err
+    assert "infra/llm-gateway/.env" in err
+    assert not (gateway / ".env").is_file()
+
+    # No warning when gateway .env present
+    (gateway / ".env").write_text("# gateway\n", encoding="utf-8")
+    compose_ops.warn_if_root_env_without_gateway()
+    assert capsys.readouterr().err == ""
+
+
 def test_smoke_base_url_still_rejects_master_key(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     """--base-url must not bypass from_env master/provider equality checks."""
     monkeypatch.setenv("LLG_LIVE", "1")
