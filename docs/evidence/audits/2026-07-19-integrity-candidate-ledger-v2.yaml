@@ -18,6 +18,7 @@ meta:
     - graded_integrity
     - blast_radius
     - verification_readiness
+  execution_batch: 2026-07-19 parallel lanes A-F shipped INT-101..115
   note: >
     Fresh residual scan after PR #2–#7. Do not re-open INT-001…015 as open work
     unless regression is proven.
@@ -26,7 +27,7 @@ candidates:
 
   - candidate_id: INT-101
     title: Ops/k8s still advertise Redis shared rpm/tpm after ADR 0004
-    status: open
+    status: shipped
     category: Wiring / Integration
     lane_sources: [deepening_seams, graded_integrity, blast_radius]
     summary: >
@@ -69,7 +70,7 @@ candidates:
 
   - candidate_id: INT-102
     title: pin-spike compose digests outside CI pin enforcement list
-    status: open
+    status: shipped
     category: Build / CI
     lane_sources: [graded_integrity]
     summary: >
@@ -101,7 +102,7 @@ candidates:
 
   - candidate_id: INT-103
     title: GatewayClient does not enforce model_alias echo of model
-    status: open
+    status: shipped
     category: Data / Schema / Contract
     lane_sources: [deepening_seams]
     summary: >
@@ -133,7 +134,7 @@ candidates:
 
   - candidate_id: INT-104
     title: Evidence docs lag flywheel (matrix/MILESTONE still UNPROVEN for closed items)
-    status: open
+    status: shipped
     category: Maintainability
     lane_sources: [graded_integrity, blast_radius, verification_readiness]
     summary: >
@@ -168,7 +169,7 @@ candidates:
 
   - candidate_id: INT-105
     title: llg keys create --models not validated against stable aliases
-    status: open
+    status: shipped
     category: Wiring / Integration
     lane_sources: [deepening_seams]
     summary: >
@@ -200,7 +201,7 @@ candidates:
 
   - candidate_id: INT-106
     title: provider-call-inventory still references reference_workflow/ directory
-    status: open
+    status: shipped
     category: Maintainability
     lane_sources: [blast_radius]
     summary: Real path is examples/reference_workflow.py; inventory still uses slash directory form.
@@ -226,7 +227,7 @@ candidates:
 
   - candidate_id: INT-107
     title: No controlled live-smoke GitHub workflow
-    status: open
+    status: shipped
     category: Testing / Fixture / Golden
     lane_sources: [verification_readiness, graded_integrity]
     summary: >
@@ -258,7 +259,7 @@ candidates:
 
   - candidate_id: INT-108
     title: Postgres/Langfuse chaos permanently skipped (DoD 13/14)
-    status: open
+    status: shipped
     category: Testing / Fixture / Golden
     lane_sources: [graded_integrity, verification_readiness]
     summary: Unconditional skip + NotImplementedError; not red-capable.
@@ -288,7 +289,7 @@ candidates:
 
   - candidate_id: INT-109
     title: Metadata schema claim deeper than field-level parity tests
-    status: open
+    status: shipped
     category: Data / Schema / Contract
     lane_sources: [deepening_seams]
     summary: >
@@ -320,7 +321,7 @@ candidates:
 
   - candidate_id: INT-110
     title: Live budget test accepts bare 401/403/429 without budget tokens
-    status: open
+    status: shipped
     category: Testing / Fixture / Golden
     lane_sources: [graded_integrity]
     summary: Soft assertion can green on wrong failure mode.
@@ -346,7 +347,7 @@ candidates:
 
   - candidate_id: INT-111
     title: KeyClientError may surface raw proxy body (≤500 chars)
-    status: open
+    status: shipped
     category: Security
     lane_sources: [graded_integrity]
     summary: Admin error path can echo secret-shaped content from proxy.
@@ -373,7 +374,7 @@ candidates:
 
   - candidate_id: INT-112
     title: No pip/pnpm dependency audit job in CI
-    status: open
+    status: shipped
     category: Security
     lane_sources: [graded_integrity]
     summary: Plan mentioned dependency audit; CI has gitleaks but no pip-audit/osv.
@@ -399,7 +400,7 @@ candidates:
 
   - candidate_id: INT-113
     title: DEFAULT_ALIASES redefined instead of importing paths.DEFAULT_ALIASES
-    status: open
+    status: shipped
     category: Maintainability
     lane_sources: [deepening_seams, blast_radius]
     evidence:
@@ -427,7 +428,7 @@ candidates:
 
   - candidate_id: INT-114
     title: Superpowers plan still reads as live architecture (langfuse_otel, old paths)
-    status: open
+    status: shipped
     category: Maintainability
     lane_sources: [blast_radius]
     summary: Historical plan can mislead agents without archive banner.
@@ -453,7 +454,7 @@ candidates:
 
   - candidate_id: INT-115
     title: Redis password on redis-cli healthcheck argv
-    status: open
+    status: shipped
     category: Security
     lane_sources: [graded_integrity]
     evidence:
@@ -478,7 +479,7 @@ candidates:
 
   - candidate_id: INT-116
     title: reconcile-cost multi-system fetch never implemented (DoD 15)
-    status: open
+    status: needs-human-decision
     category: Architecture Fitness
     lane_sources: [graded_integrity, verification_readiness]
     summary: Honest exit 2; process-only; no billing fetch.
@@ -504,7 +505,7 @@ candidates:
 
   - candidate_id: INT-117
     title: Dual-edit alias residual — no config render (accepted; optional deepen)
-    status: open
+    status: needs-human-decision
     category: Architecture Fitness
     lane_sources: [deepening_seams, blast_radius]
     summary: >
@@ -543,4 +544,7 @@ rejected_out_of_scope:
 prior_ledger_closed:
   INT-001 through INT-015: shipped or check-added (main@0d8ea41)
 
-next_loop_state: existing-report-candidate-gate
+next_loop_state: stop
+
+# Auto batch 2026-07-19: INT-101..115 shipped on feat/integrity-v2-batch;
+# INT-116/117 deferred (design / human decision).

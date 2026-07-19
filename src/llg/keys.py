@@ -98,7 +98,9 @@ def validate_key_models(
     if aliases is None:
         from llg.validate_config import load_stable_aliases
 
-        known = load_stable_aliases(aliases_path) if aliases_path is not None else load_stable_aliases()
+        known = (
+            load_stable_aliases(aliases_path) if aliases_path is not None else load_stable_aliases()
+        )
     else:
         known = aliases
 

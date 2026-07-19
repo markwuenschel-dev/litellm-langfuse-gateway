@@ -134,7 +134,7 @@ def test_create_http_error(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_sanitize_redacts_sk_secret() -> None:
     """INT-111: secret-shaped tokens never appear in sanitized body."""
-    raw = 'error: invalid key sk-secretvalue for user; Bearer tok-abc123'
+    raw = "error: invalid key sk-secretvalue for user; Bearer tok-abc123"
     out = sanitize_proxy_error_body(raw)
     assert "sk-secretvalue" not in out
     assert "Bearer tok-abc123" not in out
@@ -283,9 +283,7 @@ def test_cli_create_missing_master(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_cli_create_requires_key_alias(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LITELLM_MASTER_KEY", MASTER)
-    result = runner.invoke(
-        app, ["keys", "create", "--models", "llm-general", "--base-url", BASE]
-    )
+    result = runner.invoke(app, ["keys", "create", "--models", "llm-general", "--base-url", BASE])
     assert result.exit_code == 2
     assert "--key-alias" in (result.stdout + result.stderr)
 

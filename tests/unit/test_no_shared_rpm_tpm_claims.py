@@ -14,11 +14,13 @@ from llg.paths import REPO_ROOT
 # Case-insensitive product-claim phrases (ADR 0004 non-advertising rule).
 FORBIDDEN = re.compile(r"shared\s+rpm|shared\s+tpm", re.IGNORECASE)
 
-# Tight allowlist: ADR policy text, historical evidence, spike harnesses, archived plans.
+# Tight allowlist: ADR policy text, historical evidence, spike harnesses,
+# archived plans, and frozen SDD review packages (not live ops SoT).
 _ALLOWLIST_PREFIXES: tuple[str, ...] = (
     "docs/adr/",
     "docs/evidence/",
     "docs/superpowers/",
+    ".superpowers/",
     "tests/runtime_pin/",
     "tests/unit/test_no_shared_rpm_tpm_claims.py",
 )
