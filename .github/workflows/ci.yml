@@ -146,6 +146,7 @@ jobs:
           LITELLM_MASTER_KEY: sk-ci-master-not-real
           LITELLM_SALT_KEY: sk-ci-salt-not-real
           POSTGRES_PASSWORD: ci-postgres-password
+          DATABASE_URL: postgresql://litellm:ci-postgres-password@postgres:5432/litellm
         run: >
           docker compose
           -f infra/llm-gateway/compose.yaml
@@ -157,6 +158,7 @@ jobs:
           LITELLM_MASTER_KEY: sk-ci-master-not-real
           LITELLM_SALT_KEY: sk-ci-salt-not-real
           POSTGRES_PASSWORD: ci-postgres-password
+          DATABASE_URL: postgresql://litellm:ci-postgres-password@postgres:5432/litellm
           REDIS_PASSWORD: ci-redis-password
         run: >
           docker compose
@@ -175,3 +177,16 @@ jobs:
         run: |
           docker compose -f docker-compose.yml config --quiet
           docker compose -f docker-compose.yml -f docker-compose.redis.yml config --quiet
+
+      - name: Install uv (for env-origin regression)
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Prove include env origin (gateway .env, not root)
+        run: |
+          uv sync --all-extras --frozen
+          uv run pytest tests/integration/test_compose_env_origin.py -v --tb=short

@@ -1,13 +1,24 @@
-# Thin DX shim — canonical stack lives in infra/llm-gateway/
+# Thin DX `include:` shim — canonical stack lives in infra/llm-gateway/
 #
-# Usage (from repo root):
-#   cp infra/llm-gateway/.env.example .env   # or use root .env.example
-#   docker compose up -d
+# IMPORTANT — env origin:
+# Compose loads project `.env` from the process working directory. From repo root,
+# a root `.env` would win over infra/llm-gateway/.env for ${VAR} interpolation.
+# Always pass the gateway env file explicitly (or use `uv run llg up`, which
+# runs compose with cwd = infra/llm-gateway):
 #
-# With Redis:
-#   docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d
+#   docker compose --env-file infra/llm-gateway/.env -f docker-compose.yml up -d
 #
-# Prefer editing files under infra/llm-gateway/ only.
+# Setup:
+#   cp infra/llm-gateway/.env.example infra/llm-gateway/.env
+#   # edit infra/llm-gateway/.env only — do not create a repo-root .env
+#   uv run llg up
+#   # or: docker compose --env-file infra/llm-gateway/.env -f docker-compose.yml up -d
+#
+# With Redis overlay:
+#   docker compose --env-file infra/llm-gateway/.env \
+#     -f docker-compose.yml -f docker-compose.redis.yml up -d
+#
+# Regression: tests/integration/test_compose_env_origin.py
 
 include:
   - path: infra/llm-gateway/compose.yaml

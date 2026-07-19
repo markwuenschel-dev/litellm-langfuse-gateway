@@ -1,7 +1,9 @@
 # Thin DX shim — Redis *service* overlay in infra/llm-gateway/compose.redis.yaml
 # (container only; no LiteLLM shared-limit claim). Prefer: uv run llg up --redis-service
 #
-#   docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d
+# Always pass gateway env (same rule as docker-compose.yml):
+#   docker compose --env-file infra/llm-gateway/.env \
+#     -f docker-compose.yml -f docker-compose.redis.yml up -d
 
 include:
   - path: infra/llm-gateway/compose.redis.yaml

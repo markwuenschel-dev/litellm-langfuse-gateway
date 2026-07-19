@@ -96,23 +96,27 @@ uv run pytest tests/integration/test_virtual_key_access.py
 ## Run
 
 ```bash
-# From this directory
-cp .env.example .env
-# fill secrets (or: uv run llg secrets generate)
+# From repo root (preferred)
+cp infra/llm-gateway/.env.example infra/llm-gateway/.env
+# fill secrets (or: uv run llg secrets generate → paste into that .env)
 uv run llg up
-# equivalent: docker compose -f compose.yaml up -d
+# equivalent: docker compose -f infra/llm-gateway/compose.yaml up -d
+#             (cwd / project dir = infra/llm-gateway for env loading)
 
 # Optional Redis container (service only — not shared Router / virtual-key limits)
 uv run llg up --redis-service
 # equivalent: docker compose -f compose.yaml -f compose.redis.yaml up -d
 ```
 
-From **repo root** (same stack via shims):
+From **repo root** (include shims — **require** gateway env file):
 
 ```bash
-cp infra/llm-gateway/.env.example .env   # or keep .env next to compose
-docker compose up -d
-docker compose -f docker-compose.yml -f docker-compose.redis.yml up -d
+cp infra/llm-gateway/.env.example infra/llm-gateway/.env
+# edit infra/llm-gateway/.env — do not create a repo-root .env for the gateway
+docker compose --env-file infra/llm-gateway/.env -f docker-compose.yml up -d
+docker compose --env-file infra/llm-gateway/.env \
+  -f docker-compose.yml -f docker-compose.redis.yml up -d
+# preferred: uv run llg up
 ```
 
 | Service | Default | Role |

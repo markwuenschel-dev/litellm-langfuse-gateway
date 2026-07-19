@@ -76,7 +76,10 @@ docs/llm-platform/
 ```
 
 Root `docker-compose.yml` / `docker-compose.redis.yml` are thin `include:` shims.
-Root `.env.example` is a DX copy of the proxy template.
+Supported root invocation always passes
+`--env-file infra/llm-gateway/.env` (cwd `.env` would otherwise win). Prefer
+`uv run llg up` (compose cwd = `infra/llm-gateway`). Root `.env.example` is a
+**pointer only** (no duplicate `KEY=value` contract).
 
 ### Secret hierarchy (summary)
 

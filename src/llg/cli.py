@@ -149,7 +149,10 @@ def up(
         help="Run containers in the background (default: detach).",
     ),
 ) -> None:
-    """Start LiteLLM + PostgreSQL via infra/llm-gateway/compose.yaml."""
+    """Start LiteLLM + PostgreSQL via infra/llm-gateway/compose.yaml.
+
+    Env file: infra/llm-gateway/.env only (never repo-root .env).
+    """
     try:
         code = compose_up(redis_service=redis_service, detach=detach)
     except FileNotFoundError as exc:
