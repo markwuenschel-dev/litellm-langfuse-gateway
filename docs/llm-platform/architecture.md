@@ -100,7 +100,7 @@ Values never go in git or model YAML. See `infra/llm-gateway/.env.example` and `
 | LiteLLM Proxy | Self-hosted (Compose under `infra/llm-gateway/`) |
 | PostgreSQL | Required for production proxy features |
 | Langfuse | Cloud by default (not self-hosted unless residency/reg/cost force it) |
-| Redis | Optional service only; shared rpm/tpm **not** claimed on current pin (see INT-001 spike) |
+| Redis | Optional service only; distributed / shared rate limits **not** claimed on current pin (ADR 0004; INT-001 spike) |
 
 ## Client contract
 

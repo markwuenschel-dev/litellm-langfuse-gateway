@@ -1,8 +1,25 @@
 # Unified LiteLLM Gateway + Langfuse Observability — Implementation Plan
 
+> ## ARCHIVE / HISTORICAL — do not treat as live SoT
+>
+> This plan is **historical** (written 2026-07-17 during greenfield discovery).
+> It is retained for context only. **Do not implement from this document.**
+>
+> **Live architecture and ops** live in:
+> - `AGENTS.md`
+> - `docs/llm-platform/` (architecture, app-wiring, operating-guide, …)
+> - `docs/adr/` (policy decisions, including ADR 0004 on Redis)
+>
+> **Observability SoT today:** classic LiteLLM `langfuse` success/failure callbacks
+> (`LANGFUSE_*`; host must match project region) — **not** `langfuse_otel` as the
+> current gateway generation export path. Any `langfuse_otel` mentions below are
+> plan-era and superseded.
+>
+> ---
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task after explicit approval. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> **Status:** PLAN ONLY — do not implement until reviewed/approved.
+> **Status:** ARCHIVE / HISTORICAL — do not implement; see live docs above.
 > **Plan date:** 2026-07-17
 > **Repo inspected:** `litellm-langfuse-gateway` (greenfield scaffold on `main`, no commits at discovery time)
 

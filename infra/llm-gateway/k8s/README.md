@@ -9,7 +9,7 @@ Not a full cluster package. Use as a starting point when moving off laptop Compo
 | Pin digests | Same digests as `compose.yaml` / `upgrade-notes.md` |
 | Secrets | External Secret / sealed secret / CSI — never in git |
 | Workers | `num_workers=1` per pod; scale **replicas**, not multi-worker processes |
-| Redis | Required when `replicas > 1` for shared rpm/tpm / routing state |
+| Redis | Optional control-state service; multi-replica may use redis-service overlay — **no** shared rate-limit claim on this pin (ADR 0004) |
 | Postgres | Managed or HA; required for keys/budgets/spend |
 | YAML SoT | Mount `litellm-config.yaml`; `STORE_MODEL_IN_DB=False` |
 | Admin UI | Private NetworkPolicy / SSO; not public by default |

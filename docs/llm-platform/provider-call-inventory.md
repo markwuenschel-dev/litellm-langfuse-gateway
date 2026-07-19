@@ -17,7 +17,7 @@ Sibling apps may call this gateway with a virtual key and stable aliases. This i
 | Config | `infra/llm-gateway/litellm-config.yaml`, `config/llm/model-aliases.yaml` |
 | Env template | `infra/llm-gateway/.env.example` (canonical); root `.env.example` pointer-only |
 | Compose | `infra/llm-gateway/compose.yaml`, `compose.redis.yaml` (+ root include shims) |
-| Examples | `examples/python_client.py`, `examples/ts_client.ts`, `examples/reference_workflow/` |
+| Examples | `examples/python_client.py`, `examples/ts_client.ts`, `examples/reference_workflow.py` |
 | Docs | `README.md`, `AGENTS.md`, `docs/llm-platform/*` |
 | Tests | `tests/unit/`, `tests/integration/` |
 | Client | `src/llm_client/` (GatewayClient) |
@@ -53,7 +53,7 @@ No raw provider base URLs (`api.openai.com`, etc.) appear in first-party app cal
 | --- | --- | --- | --- | --- |
 | `examples/python_client.py` | `llm-general` (override `LITELLM_MODEL`) | Chat completions | `LITELLM_VIRTUAL_KEY` | Gateway Langfuse if configured |
 | `examples/ts_client.ts` | Same | Chat completions | Same | Same |
-| `examples/reference_workflow/` | Stable aliases | Reference multi-step | Virtual key | App + gateway |
+| `examples/reference_workflow.py` | Stable aliases | Reference multi-step | Virtual key | App + gateway |
 | `uv run llg smoke` | `--alias` (default `llm-general`) | Chat smoke | Virtual key + `LLG_LIVE=1` | Gateway |
 | `src/llm_client` unit tests | `llm-general` fixtures | Mocked HTTP | Test keys | N/A |
 | Config unit tests | Stable alias fixtures | Validate YAML | `os.environ/...` strings | N/A |

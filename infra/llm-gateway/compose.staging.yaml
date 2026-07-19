@@ -9,12 +9,13 @@
 #     -f infra/llm-gateway/compose.staging.yaml \
 #     up -d
 #
-# Optional Redis (replicas > 1 or shared rpm/tpm):
+# Optional Redis *service* (multi-replica ops; no shared rate-limit claim — ADR 0004):
 #   docker compose \
 #     -f infra/llm-gateway/compose.yaml \
 #     -f infra/llm-gateway/compose.redis.yaml \
 #     -f infra/llm-gateway/compose.staging.yaml \
 #     up -d
+# Or: uv run llg up --redis-service
 #
 # TLS: terminate at ingress / reverse proxy in front of LITELLM_PORT.
 # Admin UI: do not publish without SSO or network allowlist.
