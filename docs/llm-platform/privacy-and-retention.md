@@ -19,6 +19,21 @@ Policy for prompts, completions, identifiers, and telemetry retained by the gate
 - Enforced in-process: `src/llm_client/metadata.py` (forbidden keys, secret-shaped values, max string length 128)
 - `user_id` / `session_id`: treat as **pseudonymous**; do not encode raw PII
 
+### First-class user attribution (`user_id` → Langfuse User)
+
+`user_id` is promoted to the **native Langfuse User dimension** (`trace_user_id`),
+creating a per-user record — so generic secret screening is **not** sufficient (it
+cannot tell a raw email/name/MRN from a valid id). First-class user attribution is
+allowed **only** when the value:
+
+- Is **pseudonymous and non-reversible** without a secret;
+- Matches the enforced format `usr_<opaque>` (`^usr_[A-Za-z0-9_-]{16,80}$`, `metadata.py`);
+- Contains **no** email, legal name, username, phone, or clinical identifier;
+- Is stable only as long as the analytics use case requires.
+
+Derive it upstream with a **keyed HMAC** over the raw identifier — never an unsalted
+hash of an enumerable id (email/MRN), which is trivially reversible by dictionary.
+
 ## Prompt / response recording
 
 | Store | What may be retained | Control |

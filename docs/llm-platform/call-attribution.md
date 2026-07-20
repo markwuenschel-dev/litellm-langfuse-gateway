@@ -95,10 +95,30 @@ uv run llg keys create `
 
 ## Langfuse UI — practical filters
 
-1. Open the generation → inspect **metadata** for `service`, `feature`, `request_id`, `model_alias`.
-2. If `service` is `unattributed` → client used GatewayClient without `SERVICE_NAME`, or raw SDK without metadata.
+`GatewayClient` promotes attribution to **native Langfuse dimensions** (via
+`llm_client.langfuse_metadata.langfuse_fields`), so you can filter/group directly —
+not just read a metadata blob:
+
+| Native dimension | Source contract field | Dashboard use |
+| --- | --- | --- |
+| **Tags** (`env:`, `service:`, `feature:`, `model_alias:`) | environment / service / feature / model_alias | filter + group-by |
+| **User** | `user_id` → `trace_user_id` | native Users view (pseudonymous only) |
+| **Session** | `session_id` | native Sessions view |
+| **Release** | `release` → `trace_release` | compare deployments |
+| **Trace / generation name** | `service:feature` | readable observation names |
+
+1. Filter by tag (e.g. `env:production`, `service:checkout`) or open a generation
+   and inspect **metadata** for `request_id` / `model_alias`.
+2. If `service` is `unattributed` → client used GatewayClient without `SERVICE_NAME`,
+   or raw SDK without metadata.
 3. Cross-check **time window** with `uv run llg keys list` (key aliases / spend).
-4. App-root traces (if the app uses Langfuse SDK) should share `trace_id` / `session_id` with the contract when set.
+4. App-root traces (if the app uses Langfuse SDK) should share `trace_id` / `session_id`.
+
+**Raw OpenAI SDK callers** get these dimensions only if they send the reserved keys
+themselves (see `examples/python_client.py` / `examples/ts_client.ts`) — this is
+*reference* parity, not enforced. Dashboard blueprint: `docs/llm-platform/langfuse-dashboards.md`.
+Promotion on the pinned proxy is proven by `tests/integration/test_litellm_langfuse_pin.py`
+(**UNPROVEN until that gate + a live Cloud check pass** — see ADR 0007).
 
 ## Interpreting the mystery call you saw
 

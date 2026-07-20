@@ -85,6 +85,20 @@ async function main(): Promise<void> {
       environment,
       release,
       model_alias: model,
+      // --- LiteLLM->Langfuse native dimensions ---
+      // CALLER RESPONSIBILITY with the raw SDK (the Python GatewayClient derives
+      // these automatically). Reserved keys the classic `langfuse` callback
+      // promotes to native trace/observation fields.
+      trace_name: `${service}:${feature}`,
+      generation_name: `${service}:${feature}`,
+      trace_release: release, // NOT `version` (release = deployment)
+      tags: [
+        `env:${environment}`,
+        `service:${service}`,
+        `feature:${feature}`,
+        `model_alias:${model}`,
+      ],
+      // trace_user_id: "usr_<opaque>",  // pseudonymous only — see privacy doc
     },
   });
 

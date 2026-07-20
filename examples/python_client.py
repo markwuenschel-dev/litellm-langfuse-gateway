@@ -104,6 +104,20 @@ def main() -> int:
                 "environment": environment,
                 "release": release,
                 "model_alias": model,
+                # --- LiteLLM->Langfuse native dimensions ---
+                # CALLER RESPONSIBILITY with the raw SDK. GatewayClient derives these
+                # for you (llm_client.langfuse_metadata.langfuse_fields); the classic
+                # `langfuse` callback promotes these reserved keys to native fields.
+                "trace_name": f"{service}:{feature}",
+                "generation_name": f"{service}:{feature}",
+                "trace_release": release,  # NOT `version` (release = deployment)
+                "tags": [  # low-cardinality only; never tag ids
+                    f"env:{environment}",
+                    f"service:{service}",
+                    f"feature:{feature}",
+                    f"model_alias:{model}",
+                ],
+                # "trace_user_id": "usr_<opaque>",  # pseudonymous only (privacy doc)
             }
         },
     )

@@ -46,6 +46,13 @@ dev = [
 clients = [
   "openai>=1.50",
 ]
+# Gate 3 (tests/integration/test_litellm_langfuse_pin.py): the pinned LiteLLM
+# whose classic `langfuse` callback we prove promotes reserved metadata keys to
+# native Langfuse fields. Normally LiteLLM runs only in the proxy Docker image;
+# this extra brings it into the test env. Keep pinned to the runtime image tag.
+test-litellm = [
+  "litellm==1.92.0",
+]
 
 [project.scripts]
 llg = "llg.cli:run"
@@ -97,6 +104,7 @@ pythonpath = ["src", "."]
 addopts = "-q"
 markers = [
   "pin_spike: Docker pin-compatibility spike (set LLG_PIN_SPIKE=1; not LLG_LIVE)",
+  "pin_langfuse: pinned LiteLLM langfuse-callback contract (LLG_TEST_LITELLM=1 + test-litellm extra)",
 ]
 
 [tool.mypy]

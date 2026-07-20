@@ -219,6 +219,24 @@ OpenAI SDK calls do not unless you pass `metadata` / `extra_body`.
 
 Schema: `config/llm/metadata-contract.schema.json`.
 
+### Native Langfuse dimensions (dashboards)
+
+`GatewayClient` additionally derives **reserved keys** the classic `langfuse`
+callback promotes to native Langfuse fields, so dashboards can group/filter
+natively (not just read a metadata blob):
+
+| Contract field | → native Langfuse | Note |
+| --- | --- | --- |
+| service + feature | `trace_name` / `generation_name` (`service:feature`) | readable observation names |
+| release | `trace_release` | **not** `version` (release = deployment; version = component) |
+| user_id | `trace_user_id` | native User view; **pseudonymous `usr_<opaque>` only** |
+| session_id | native Session | flows under its own key |
+| env/service/feature/model_alias | `tags` | low-cardinality filter/group; never tag ids |
+
+This is automatic with `GatewayClient`. **Raw SDK callers must send these keys
+themselves** (reference examples above) — reference parity, not enforced. See
+`docs/llm-platform/langfuse-dashboards.md` and ADR 0007.
+
 ### Optional app-level Langfuse root
 
 For multi-step workflows (retrieval → tools → model), create a **root** trace in the app and pass identifiers that LiteLLM/Langfuse can attach (e.g. `trace_id`, `session_id`, `user_id` per contract). Do not dual-write the completion itself unless you have a deliberate reason.

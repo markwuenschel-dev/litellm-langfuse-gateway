@@ -31,6 +31,7 @@ __all__ = [
     "MAX_STRING_LEN",
     "RETRY_ATTEMPT_MIN",
     "RETRY_ATTEMPT_MAX",
+    "USER_ID_PATTERN",
     "UNATTRIBUTED_SERVICE",
     "RequestMetadata",
     "schema_path",
@@ -91,6 +92,14 @@ _SECRET_VALUE_PATTERNS = (
     re.compile(r"^Bearer\s+\S+", re.I),
     re.compile(r"-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----"),
 )
+
+# Pseudonymous user id format. `user_id` becomes a first-class Langfuse dimension
+# (mapped to `trace_user_id` → the native Users view), so generic secret screening
+# is not enough: a raw email / name / MRN would pass the secret checks. Require an
+# opaque `usr_<id>` shape and derive it upstream via a keyed HMAC — never a raw or
+# unsalted-hashed enumerable identifier. See docs/llm-platform/privacy-and-retention.md.
+_USER_ID_RE = re.compile(r"^usr_[A-Za-z0-9_\-]{16,80}$")
+USER_ID_PATTERN = _USER_ID_RE.pattern
 
 _STRING_FIELDS = ALLOWED_FIELDS - {"retry_attempt", "fallback_used"}
 # Mirrors schema maxLength on bounded string properties (and blanket cap in Python).
@@ -199,6 +208,12 @@ def validate_metadata(data: Mapping[str, Any], *, require_trace_id: bool = False
             if key == "environment" and value not in ENVIRONMENTS:
                 raise MetadataValidationError(
                     f"metadata.environment must be one of {sorted(ENVIRONMENTS)}"
+                )
+            if key == "user_id" and not _USER_ID_RE.match(value):
+                raise MetadataValidationError(
+                    "metadata.user_id must be a pseudonymous id matching "
+                    f"'{USER_ID_PATTERN}' (e.g. usr_ + 16-80 chars [A-Za-z0-9_-]); "
+                    "derive via a keyed HMAC — never a raw email/name/MRN"
                 )
             out[key] = value
             continue
