@@ -175,7 +175,9 @@ def test_cli_json_mode() -> None:
 
 
 def test_cli_no_run_id_flag() -> None:
-    result = runner.invoke(app, ["reconcile-cost", "--help"])
+    # Fixed wide width so Rich does not wrap/truncate `--run-file` out of the
+    # help text at CI's default 80 columns (option name must stay a substring).
+    result = runner.invoke(app, ["reconcile-cost", "--help"], env={"COLUMNS": "200"})
     assert result.exit_code == 0
     assert "--run-id" not in result.stdout
     assert "--run-file" in result.stdout
