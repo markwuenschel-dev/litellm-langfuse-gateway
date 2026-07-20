@@ -1,0 +1,550 @@
+# Candidate ledger v2 — post-flywheel integrity parallel report
+# Date: 2026-07-19
+# Mode: --parallel-report (read-only; stop at candidate gate)
+# Prior ledger INT-001…015: exhausted (shipped/check-added) on main@0d8ea41
+# Status: open | selected | shipped | fixed | check-added | rejected | blocked | needs-human-decision
+
+meta:
+  repo: litellm-langfuse-gateway
+  ref: main@0d8ea41
+  prior_ledger: docs/evidence/audits/2026-07-19-integrity-candidate-ledger.yaml
+  hermetic_baseline:
+    ruff: pass
+    pytest_unit: pass
+    mypy: pass
+    config_validate: pass
+  lane_sources:
+    - deepening_seams
+    - graded_integrity
+    - blast_radius
+    - verification_readiness
+  execution_batch: 2026-07-19 parallel lanes A-F shipped INT-101..115
+  note: >
+    Fresh residual scan after PR #2–#7. Do not re-open INT-001…015 as open work
+    unless regression is proven.
+
+candidates:
+
+  - candidate_id: INT-101
+    title: Ops/k8s still advertise Redis shared rpm/tpm after ADR 0004
+    status: shipped
+    category: Wiring / Integration
+    lane_sources: [deepening_seams, graded_integrity, blast_radius]
+    summary: >
+      ADR 0004 forbids advertising shared limits on this pin; k8s principles,
+      operating-guide table, and compose.staging comments still say Redis is
+      required for shared rpm/tpm when replicas > 1.
+    root_cause: Doc/ops surfaces not updated when redis-service honesty landed.
+    evidence:
+      - file: docs/adr/0004-redis-service-not-shared-limits.md
+        line: 23
+        observation: must not advertise shared limits on this pin
+      - file: infra/llm-gateway/k8s/README.md
+        line: 12
+        observation: shared rpm/tpm when replicas > 1
+      - file: docs/llm-platform/operating-guide.md
+        line: 48
+        observation: Redis required if replicas > 1
+      - file: infra/llm-gateway/compose.staging.yaml
+        line: 12
+        observation: shared rpm/tpm comment
+    scores:
+      severity: 4
+      confidence: 5
+      leverage: 4
+      locality: 4
+      testability: 4
+      blast_radius: 2
+      regression_risk: 1
+      human_decision_risk: 1
+    rollup:
+      priority_score: 17
+      recommended_action: direct-fix
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: direct-fix
+    lenses: [Wiring, Consistency]
+    enforceable_check: >
+      Hermetic grep/fixture forbidding "shared rpm" outside ADR/spike allowlist,
+      or assert k8s+operating-guide contain pin non-claim language.
+
+  - candidate_id: INT-102
+    title: pin-spike compose digests outside CI pin enforcement list
+    status: shipped
+    category: Build / CI
+    lane_sources: [graded_integrity]
+    summary: >
+      CI pin job only checks compose.yaml + compose.redis.yaml; pin-spike compose
+      can drift off digests without CI red.
+    evidence:
+      - file: .github/workflows/ci.yml
+        line: 94
+        observation: files list omits tests/runtime_pin/compose
+      - file: tests/runtime_pin/compose/compose.pin-spike.yaml
+        line: 1
+        observation: uses production digests but not CI-gated
+    scores:
+      severity: 2
+      confidence: 5
+      leverage: 3
+      locality: 5
+      testability: 5
+      blast_radius: 1
+      regression_risk: 1
+      human_decision_risk: 1
+    rollup:
+      priority_score: 17
+      recommended_action: direct-fix
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: direct-fix
+    lenses: [Test/CI]
+
+  - candidate_id: INT-103
+    title: GatewayClient does not enforce model_alias echo of model
+    status: shipped
+    category: Data / Schema / Contract
+    lane_sources: [deepening_seams]
+    summary: >
+      Schema describes model_alias as echo of model field; GatewayClient.chat
+      never checks equality or alias membership; metadata optional.
+    evidence:
+      - file: config/llm/metadata-contract.schema.json
+        line: 45
+        observation: model_alias described as echo of model field
+      - file: src/llm_client/client.py
+        line: 198
+        observation: model required; no model_alias cross-check
+    scores:
+      severity: 3
+      confidence: 5
+      leverage: 4
+      locality: 4
+      testability: 5
+      blast_radius: 2
+      regression_risk: 2
+      human_decision_risk: 1
+    rollup:
+      priority_score: 16
+      recommended_action: fitness-check
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: fitness-check
+    lenses: [Contract, Bug]
+
+  - candidate_id: INT-104
+    title: Evidence docs lag flywheel (matrix/MILESTONE still UNPROVEN for closed items)
+    status: shipped
+    category: Maintainability
+    lane_sources: [graded_integrity, blast_radius, verification_readiness]
+    summary: >
+      Code has gitleaks, live ACL/budget tests, ADRs; failure-matrix lower table,
+      MILESTONE DoD rows, and empty evidence index still under-claim or lag.
+    evidence:
+      - file: docs/evidence/MILESTONE-REPORT.md
+        line: 44
+        observation: may still under-claim gitleaks / live ACL
+      - file: docs/evidence/README.md
+        line: 49
+        observation: live runs table empty
+      - file: docs/evidence/failure-matrix.md
+        line: 1
+        observation: mixed automated vs UNPROVEN labeling
+    scores:
+      severity: 3
+      confidence: 5
+      leverage: 3
+      locality: 4
+      testability: 4
+      blast_radius: 2
+      regression_risk: 1
+      human_decision_risk: 1
+    rollup:
+      priority_score: 15
+      recommended_action: direct-fix
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: direct-fix
+    lenses: [Process, Verification]
+
+  - candidate_id: INT-105
+    title: llg keys create --models not validated against stable aliases
+    status: shipped
+    category: Wiring / Integration
+    lane_sources: [deepening_seams]
+    summary: >
+      Key provision accepts free-text models; ACL failures deferred to live traffic.
+      load_stable_aliases() exists but keys.create does not consult it.
+    evidence:
+      - file: src/llg/keys.py
+        line: 103
+        observation: models list passed through without alias SoT check
+      - file: src/llg/validate_config.py
+        line: 48
+        observation: load_stable_aliases available
+    scores:
+      severity: 3
+      confidence: 5
+      leverage: 3
+      locality: 4
+      testability: 5
+      blast_radius: 2
+      regression_risk: 1
+      human_decision_risk: 2
+    rollup:
+      priority_score: 15
+      recommended_action: fitness-check
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: fitness-check
+    lenses: [Wiring, Contract]
+
+  - candidate_id: INT-106
+    title: provider-call-inventory still references reference_workflow/ directory
+    status: shipped
+    category: Maintainability
+    lane_sources: [blast_radius]
+    summary: Real path is examples/reference_workflow.py; inventory still uses slash directory form.
+    evidence:
+      - file: docs/llm-platform/provider-call-inventory.md
+        line: 20
+        observation: examples/reference_workflow/
+    scores:
+      severity: 1
+      confidence: 5
+      leverage: 2
+      locality: 5
+      testability: 4
+      blast_radius: 1
+      regression_risk: 1
+      human_decision_risk: 1
+    rollup:
+      priority_score: 14
+      recommended_action: direct-fix
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: direct-fix
+
+  - candidate_id: INT-107
+    title: No controlled live-smoke GitHub workflow
+    status: shipped
+    category: Testing / Fixture / Golden
+    lane_sources: [verification_readiness, graded_integrity]
+    summary: >
+      Live ACL/budget/health/keys are red-capable in pytest but never run on a
+      controlled runner; evidence index empty.
+    evidence:
+      - file: .github/workflows/ci.yml
+        line: 1
+        observation: only hermetic CI workflow present
+      - file: tests/integration/test_failure_modes_live.py
+        line: 61
+        observation: red-capable under LLG_LIVE only
+    scores:
+      severity: 3
+      confidence: 5
+      leverage: 4
+      locality: 3
+      testability: 5
+      blast_radius: 3
+      regression_risk: 2
+      human_decision_risk: 2
+    rollup:
+      priority_score: 13
+      recommended_action: fitness-check
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: fitness-check
+    lenses: [Test/CI, Verification]
+
+  - candidate_id: INT-108
+    title: Postgres/Langfuse chaos permanently skipped (DoD 13/14)
+    status: shipped
+    category: Testing / Fixture / Golden
+    lane_sources: [graded_integrity, verification_readiness]
+    summary: Unconditional skip + NotImplementedError; not red-capable.
+    evidence:
+      - file: tests/integration/test_failure_modes_live.py
+        line: 146
+        observation: permanent skip postgres down
+      - file: tests/integration/test_failure_modes_live.py
+        line: 155
+        observation: permanent skip langfuse unreachable
+    scores:
+      severity: 4
+      confidence: 5
+      leverage: 4
+      locality: 3
+      testability: 4
+      blast_radius: 3
+      regression_risk: 2
+      human_decision_risk: 2
+    rollup:
+      priority_score: 13
+      recommended_action: fitness-check
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: fitness-check
+    lenses: [Test/CI, Reliability]
+
+  - candidate_id: INT-109
+    title: Metadata schema claim deeper than field-level parity tests
+    status: shipped
+    category: Data / Schema / Contract
+    lane_sources: [deepening_seams]
+    summary: >
+      Runtime secret/forbidden rules live only in pure Python; schema docstring
+      claims SoT; parity tests do not cover maxLength or secret patterns.
+    evidence:
+      - file: src/llm_client/metadata.py
+        line: 3
+        observation: Schema SoT claim vs pure Python enforcement
+      - file: tests/unit/test_metadata_schema_parity.py
+        line: 14
+        observation: field-level parity only
+    scores:
+      severity: 3
+      confidence: 5
+      leverage: 3
+      locality: 3
+      testability: 5
+      blast_radius: 2
+      regression_risk: 2
+      human_decision_risk: 2
+    rollup:
+      priority_score: 13
+      recommended_action: fitness-check
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: fitness-check
+    lenses: [Contract]
+
+  - candidate_id: INT-110
+    title: Live budget test accepts bare 401/403/429 without budget tokens
+    status: shipped
+    category: Testing / Fixture / Golden
+    lane_sources: [graded_integrity]
+    summary: Soft assertion can green on wrong failure mode.
+    evidence:
+      - file: tests/integration/test_failure_modes_live.py
+        line: 94
+        observation: or status in 401/403/429 without budget body
+    scores:
+      severity: 2
+      confidence: 4
+      leverage: 3
+      locality: 4
+      testability: 5
+      blast_radius: 2
+      regression_risk: 2
+      human_decision_risk: 1
+    rollup:
+      priority_score: 13
+      recommended_action: fitness-check
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: fitness-check
+
+  - candidate_id: INT-111
+    title: KeyClientError may surface raw proxy body (≤500 chars)
+    status: shipped
+    category: Security
+    lane_sources: [graded_integrity]
+    summary: Admin error path can echo secret-shaped content from proxy.
+    evidence:
+      - file: src/llg/keys.py
+        line: 86
+        observation: response.text[:500] in KeyClientError
+    scores:
+      severity: 2
+      confidence: 4
+      leverage: 2
+      locality: 5
+      testability: 4
+      blast_radius: 2
+      regression_risk: 2
+      human_decision_risk: 1
+    rollup:
+      priority_score: 12
+      recommended_action: direct-fix
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: direct-fix
+    lenses: [Security]
+
+  - candidate_id: INT-112
+    title: No pip/pnpm dependency audit job in CI
+    status: shipped
+    category: Security
+    lane_sources: [graded_integrity]
+    summary: Plan mentioned dependency audit; CI has gitleaks but no pip-audit/osv.
+    evidence:
+      - file: .github/workflows/ci.yml
+        line: 14
+        observation: secret-scan only for security jobs
+    scores:
+      severity: 2
+      confidence: 4
+      leverage: 3
+      locality: 5
+      testability: 5
+      blast_radius: 2
+      regression_risk: 1
+      human_decision_risk: 1
+    rollup:
+      priority_score: 15
+      recommended_action: fitness-check
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: fitness-check
+
+  - candidate_id: INT-113
+    title: DEFAULT_ALIASES redefined instead of importing paths.DEFAULT_ALIASES
+    status: shipped
+    category: Maintainability
+    lane_sources: [deepening_seams, blast_radius]
+    evidence:
+      - file: src/llg/paths.py
+        line: 11
+        observation: DEFAULT_ALIASES defined
+      - file: src/llg/validate_config.py
+        line: 25
+        observation: same path redefined
+    scores:
+      severity: 1
+      confidence: 5
+      leverage: 1
+      locality: 5
+      testability: 4
+      blast_radius: 1
+      regression_risk: 1
+      human_decision_risk: 1
+    rollup:
+      priority_score: 13
+      recommended_action: direct-fix
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: direct-fix
+
+  - candidate_id: INT-114
+    title: Superpowers plan still reads as live architecture (langfuse_otel, old paths)
+    status: shipped
+    category: Maintainability
+    lane_sources: [blast_radius]
+    summary: Historical plan can mislead agents without archive banner.
+    evidence:
+      - file: docs/superpowers/plans/2026-07-17-unified-litellm-langfuse-gateway.md
+        line: 11
+        observation: still describes langfuse_otel architecture
+    scores:
+      severity: 2
+      confidence: 5
+      leverage: 2
+      locality: 4
+      testability: 1
+      blast_radius: 2
+      regression_risk: 1
+      human_decision_risk: 1
+    rollup:
+      priority_score: 10
+      recommended_action: direct-fix
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: direct-fix
+
+  - candidate_id: INT-115
+    title: Redis password on redis-cli healthcheck argv
+    status: shipped
+    category: Security
+    lane_sources: [graded_integrity]
+    evidence:
+      - file: infra/llm-gateway/compose.redis.yaml
+        line: 39
+        observation: redis-cli -a ${REDIS_PASSWORD}
+    scores:
+      severity: 2
+      confidence: 4
+      leverage: 2
+      locality: 5
+      testability: 3
+      blast_radius: 2
+      regression_risk: 2
+      human_decision_risk: 1
+    rollup:
+      priority_score: 11
+      recommended_action: fitness-check
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: fitness-check
+
+  - candidate_id: INT-116
+    title: reconcile-cost multi-system fetch never implemented (DoD 15)
+    status: shipped
+    category: Architecture Fitness
+    lane_sources: [graded_integrity, verification_readiness]
+    summary: Honest exit 2; process-only; no billing fetch.
+    evidence:
+      - file: src/llg/cli.py
+        line: 487
+        observation: always Exit(2) UNPROVEN
+    scores:
+      severity: 3
+      confidence: 5
+      leverage: 3
+      locality: 3
+      testability: 2
+      blast_radius: 2
+      regression_risk: 1
+      human_decision_risk: 3
+    rollup:
+      priority_score: 10
+      recommended_action: design
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: design
+
+  - candidate_id: INT-117
+    title: Dual-edit alias residual — no config render (accepted; optional deepen)
+    status: shipped
+    category: Architecture Fitness
+    lane_sources: [deepening_seams, blast_radius]
+    summary: >
+      ADR 0006 accepts dual YAML + validate. Optional consumers enforcement,
+      reverse orphan model_list check, or future render — design weight.
+    evidence:
+      - file: docs/adr/0006-alias-authority-chain.md
+        line: 22
+        observation: no general renderer
+      - file: src/llg/validate_config.py
+        line: 116
+        observation: consumers optional decorative
+    scores:
+      severity: 2
+      confidence: 5
+      leverage: 3
+      locality: 2
+      testability: 5
+      blast_radius: 3
+      regression_risk: 2
+      human_decision_risk: 3
+    rollup:
+      priority_score: 9
+      recommended_action: design
+      execution_mode: sequential
+      blocked_by: []
+    recommended_branch: design
+
+rejected_out_of_scope:
+  - Re-open INT-001…015 as open work without regression evidence
+  - Self-host Langfuse HA
+  - Full monorepo app rewrite / agent framework
+  - Distributed Redis fail-closed wrapper (ADR 0004 closed product claim)
+  - External sibling-app deep audits
+
+prior_ledger_closed:
+  INT-001 through INT-015: shipped or check-added (main@0d8ea41)
+
+next_loop_state: stop
+
+# Auto batch 2026-07-19: INT-101..115 shipped on feat/integrity-v2-batch;
+# INT-116/117 deferred (design / human decision).

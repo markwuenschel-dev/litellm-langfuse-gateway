@@ -1,15 +1,20 @@
 # Application-facing stable model alias contract (WP6 + WP7).
 #
-# Authority chain (ADR 0006 / INT-002):
+# Authority chain (ADR 0006 / INT-002 / INT-117):
 #   1. This file is the semantic *write* SoT — keys under aliases: are the
-#      stable app-facing set (load_stable_aliases() derives the check set).
+#      full registry (app + optional internal). Equality with model_list is required.
 #   2. infra/llm-gateway/litellm-config.yaml is the runtime model_list SoT
-#      (must expose every alias here with matching litellm_model + env key).
-#   3. Admin UI / DB model edits are NOT production alias authority.
-#   4. There is no third hardcoded STABLE_ALIASES list.
+#      (must expose every registry name with matching litellm_model + env key;
+#      must not list undeclared model_name values).
+#   3. load_stable_aliases() = app-facing subset (registry_role app, default).
+#   4. Admin UI / DB model edits are NOT production alias authority.
+#   5. There is no third hardcoded STABLE_ALIASES list.
+#   6. No arbitrary runtime-only routes: declare internal routes here with
+#      registry_role: internal + exemption_rationale (never as model_list orphans).
 #
 # Rules:
 #   - Only aliases with consumers (see consumers below). Do not invent unused names.
+#   - registry_role: app (default) | internal (requires exemption_rationale).
 #   - api_key_env is an env var name only — never put raw secrets here or in litellm-config.
 #   - Fallback groups are off by default (no ordered multi-provider failover yet).
 #   - Changing an alias→provider mapping requires: reason, eval, cost/latency,

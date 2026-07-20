@@ -45,7 +45,7 @@ uv run llg keys list          # needs master; metadata only
 | Compose overlay | `infra/llm-gateway/compose.staging.yaml` | Same base + prod secret store |
 | Env contract | `config/llm/environments/staging.yaml` | `production.yaml` |
 | Smoke identity | Low budget, restricted models | Same pattern; stricter network |
-| Redis | Required if replicas > 1 | Required if replicas > 1 |
+| Redis | Optional redis-service overlay if multi-replica; **no** shared rate-limit claim (ADR 0004) | Same; do not advertise shared limits on this pin |
 | Langfuse | Cloud project (staging keys) | Cloud project (prod keys); never mix |
 
 ## Smoke identity (staging)

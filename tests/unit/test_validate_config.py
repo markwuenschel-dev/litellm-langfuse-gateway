@@ -6,6 +6,7 @@ from pathlib import Path
 
 import yaml
 
+from llg.paths import DEFAULT_ALIASES as PATHS_DEFAULT_ALIASES
 from llg.paths import REPO_ROOT
 from llg.validate_config import (
     DEFAULT_ALIASES,
@@ -14,6 +15,12 @@ from llg.validate_config import (
     validate_model_aliases,
 )
 from scripts.validate_config import validate_config as scripts_validate_config
+
+
+def test_default_aliases_is_paths_sot() -> None:
+    """INT-113: validate_config re-exports paths.DEFAULT_ALIASES (single SoT)."""
+    assert DEFAULT_ALIASES is PATHS_DEFAULT_ALIASES
+    assert DEFAULT_ALIASES == REPO_ROOT / "config" / "llm" / "model-aliases.yaml"
 
 
 def test_repo_config_is_valid() -> None:
@@ -231,6 +238,81 @@ def test_alias_contract_route_mismatch(tmp_path: Path) -> None:
     config_path.write_text(yaml.dump({"model_list": models}), encoding="utf-8")
     errors = validate_config(config_path, aliases_path=aliases_path)
     assert any("route mismatch" in e and "llm-general" in e for e in errors)
+
+
+def test_alias_contract_undeclared_runtime_only_route(tmp_path: Path) -> None:
+    """INT-117: model_list entry not in registry → equality failure."""
+    aliases = _minimal_stable_aliases()
+    aliases_path = tmp_path / "model-aliases.yaml"
+    aliases_path.write_text(yaml.dump(aliases), encoding="utf-8")
+    models = _model_list_from_aliases(aliases)
+    models.append(
+        {
+            "model_name": "shadow-eval-only",
+            "litellm_params": {
+                "model": "openai/gpt-4o-mini",
+                "api_key": "os.environ/OPENAI_API_KEY",
+            },
+        }
+    )
+    config_path = tmp_path / "litellm-config.yaml"
+    config_path.write_text(yaml.dump({"model_list": models}), encoding="utf-8")
+    errors = validate_config(config_path, aliases_path=aliases_path)
+    assert any("undeclared runtime-only" in e and "shadow-eval-only" in e for e in errors)
+
+
+def test_internal_registry_role_requires_rationale(tmp_path: Path) -> None:
+    path = tmp_path / "aliases.yaml"
+    path.write_text(
+        yaml.dump(
+            {
+                "aliases": {
+                    "llm-general": {
+                        "litellm_model": "openai/gpt-4o-mini",
+                        "api_key_env": "OPENAI_API_KEY",
+                    },
+                    "eval-shadow": {
+                        "litellm_model": "openai/gpt-4o-mini",
+                        "api_key_env": "OPENAI_API_KEY",
+                        "registry_role": "internal",
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    errors = validate_model_aliases(path)
+    assert any("exemption_rationale" in e and "eval-shadow" in e for e in errors)
+
+
+def test_internal_role_in_equality_not_in_stable_aliases(tmp_path: Path) -> None:
+    """Internal names participate in equality; excluded from app stable set."""
+    from llg.validate_config import load_registry_names, load_stable_aliases
+
+    aliases = {
+        "aliases": {
+            "llm-general": {
+                "litellm_model": "openai/gpt-4o-mini",
+                "api_key_env": "OPENAI_API_KEY",
+            },
+            "eval-shadow": {
+                "litellm_model": "openai/gpt-4o-mini",
+                "api_key_env": "OPENAI_API_KEY",
+                "registry_role": "internal",
+                "exemption_rationale": "offline eval harness only",
+            },
+        }
+    }
+    aliases_path = tmp_path / "model-aliases.yaml"
+    aliases_path.write_text(yaml.dump(aliases), encoding="utf-8")
+    config_path = tmp_path / "litellm-config.yaml"
+    config_path.write_text(
+        yaml.dump({"model_list": _model_list_from_aliases(aliases)}),
+        encoding="utf-8",
+    )
+    assert validate_config(config_path, aliases_path=aliases_path) == []
+    assert load_stable_aliases(aliases_path) == frozenset({"llm-general"})
+    assert load_registry_names(aliases_path) == frozenset({"llm-general", "eval-shadow"})
 
 
 def test_validate_model_aliases_requires_llm_general(tmp_path: Path) -> None:

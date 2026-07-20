@@ -155,8 +155,73 @@ def test_chat_auto_metadata_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert md["environment"] == "staging"
     assert md["release"] == "abc1234"
     assert md["model_alias"] == "llm-general"
+    assert md["model_alias"] == captured["body"]["model"]
     assert md["feature"] == "chat"
     assert "request_id" in md
+
+
+def test_chat_coerces_mismatched_model_alias_to_echo_model() -> None:
+    """INT-103: divergent metadata.model_alias is coerced to match model."""
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(request.content.decode())
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"role": "assistant", "content": "ok"}}]},
+        )
+
+    cfg = GatewayConfig(base_url="http://proxy.test/v1", virtual_key="sk-v")
+    client = GatewayClient(cfg, transport=_transport(handler))
+    # Caller claims a different alias than the request model field.
+    meta = _meta(model_alias="llm-other-wrong")
+    client.chat(
+        model="llm-general",
+        messages=[{"role": "user", "content": "x"}],
+        metadata=meta,
+    )
+    client.close()
+
+    body = captured["body"]
+    assert body["model"] == "llm-general"
+    assert body["metadata"]["model_alias"] == "llm-general"
+    assert body["metadata"]["model_alias"] == body["model"]
+    # Other attribution fields preserved through coerce.
+    assert body["metadata"]["service"] == "test-svc"
+    assert body["metadata"]["feature"] == "unit"
+
+
+def test_chat_model_alias_echo_from_mapping() -> None:
+    """INT-103: mapping metadata with wrong model_alias is also coerced."""
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(request.content.decode())
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"role": "assistant", "content": "ok"}}]},
+        )
+
+    cfg = GatewayConfig(base_url="http://proxy.test/v1", virtual_key="sk-v")
+    client = GatewayClient(cfg, transport=_transport(handler))
+    client.chat(
+        model="llm-code",
+        messages=[{"role": "user", "content": "x"}],
+        metadata={
+            "request_id": str(uuid.uuid4()),
+            "service": "map-svc",
+            "feature": "map",
+            "environment": "development",
+            "release": "t",
+            "model_alias": "llm-general",  # deliberately wrong vs model=
+        },
+    )
+    client.close()
+
+    body = captured["body"]
+    assert body["model"] == "llm-code"
+    assert body["metadata"]["model_alias"] == "llm-code"
+    assert body["metadata"]["service"] == "map-svc"
 
 
 def test_chat_require_attribution_blocks_unattributed(monkeypatch: pytest.MonkeyPatch) -> None:

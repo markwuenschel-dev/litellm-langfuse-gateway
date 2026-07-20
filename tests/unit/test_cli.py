@@ -142,14 +142,14 @@ def test_smoke_base_url_still_rejects_provider_key(monkeypatch) -> None:  # type
     assert "config error" in combined.lower() or "OPENAI" in combined
 
 
-def test_reconcile_cost_unproven_exits_nonzero(monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    """Stub must not report success (exit 0) when no reconciliation was performed."""
+def test_reconcile_cost_without_run_file_exits_2(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """INT-116: guide mode (no --run-file) is incomplete — exit 2; no LLG_LIVE gate."""
     monkeypatch.delenv("LLG_LIVE", raising=False)
-    result = runner.invoke(app, ["reconcile-cost", "--run-id", "unit-test"])
+    result = runner.invoke(app, ["reconcile-cost"])
     assert result.exit_code == 2
     combined = result.stdout + result.stderr
-    assert "UNPROVEN" in combined
-    assert "unit-test" in combined
+    assert "INCOMPLETE" in combined or "--run-file" in combined
+    assert "LLG_LIVE" not in combined
 
 
 def test_help_lists_smoke_and_reconcile() -> None:

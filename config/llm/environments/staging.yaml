@@ -19,8 +19,8 @@ set_verbose: false
 request_timeout: 600
 health_timeout: 10
 
-# Redis required when running more than one LiteLLM replica or shared rpm/tpm
-# Unbound contract flag; see production.yaml note — no shared-limit claim on pin.
+# Historical contract flag (unbound by runtime). Multi-replica may use redis-service
+# overlay; shared LiteLLM rate limits are NOT claimed on the current pin (ADR 0004).
 redis_required: true
 
 postgres_required: true
