@@ -16,6 +16,7 @@ from llm_client.errors import (
     GatewayUnavailable,
     error_from_response,
 )
+from llm_client.langfuse_metadata import LANGFUSE_RESERVED_KEYS, langfuse_fields
 from llm_client.metadata import RequestMetadata
 
 __all__ = [
@@ -245,10 +246,22 @@ class GatewayClient:
                 "Unset LLG_REQUIRE_ATTRIBUTION to allow service=unattributed."
             )
 
+        # Validated attribution (vendor-neutral contract) + derived Langfuse
+        # native-dimension keys (tags/trace_name/generation_name/trace_release/
+        # trace_user_id). Projection is merged AFTER validation so the bounded
+        # contract is unchanged. The collision guard future-proofs against a
+        # contract change that starts emitting a reserved key and shadows the
+        # projection (cannot fire with today's ALLOWED_FIELDS).
+        attribution = meta_obj.to_dict(require_trace_id=require_trace_id)
+        collisions = LANGFUSE_RESERVED_KEYS & attribution.keys()
+        if collisions:
+            raise GatewayConfigError(
+                f"attribution emitted reserved Langfuse keys: {sorted(collisions)}"
+            )
         body: dict[str, Any] = {
             "model": model,
             "messages": list(messages),
-            "metadata": meta_obj.to_dict(require_trace_id=require_trace_id),
+            "metadata": {**attribution, **langfuse_fields(meta_obj)},
         }
         if temperature is not None:
             body["temperature"] = temperature

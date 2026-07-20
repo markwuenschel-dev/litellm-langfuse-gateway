@@ -56,7 +56,7 @@ def test_validate_accepts_optional_fields() -> None:
         _valid(
             trace_id="trace-abc",
             session_id="sess-1",
-            user_id="user-pseudo",
+            user_id="usr_0123456789abcdef",
             retry_attempt=1,
             fallback_used=False,
         )
@@ -112,6 +112,20 @@ def test_rejects_secret_shaped_value() -> None:
 def test_rejects_bearer_value() -> None:
     with pytest.raises(MetadataValidationError, match="secret"):
         validate_metadata(_valid(user_id="Bearer sk-abc12345"))
+
+
+def test_user_id_requires_pseudonym_format() -> None:
+    """user_id is a first-class Langfuse User dimension → must be opaque `usr_<id>`.
+
+    Format gate catches raw/enumerable identifiers that generic secret screening
+    (which only rejects secret-shaped values) would let through.
+    """
+    ok = validate_metadata(_valid(user_id="usr_" + "a" * 16))
+    assert ok["user_id"] == "usr_" + "a" * 16
+    # Not secret-shaped, but not a pseudonym either → rejected.
+    for bad in ("user-pseudo", "alice@example.com", "usr_short", "12345678"):
+        with pytest.raises(MetadataValidationError, match="pseudonymous"):
+            validate_metadata(_valid(user_id=bad))
 
 
 def test_string_fields_max_length_128() -> None:

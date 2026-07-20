@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from decimal import Decimal
 from pathlib import Path
 
@@ -175,7 +176,10 @@ def test_cli_json_mode() -> None:
 
 
 def test_cli_no_run_id_flag() -> None:
-    result = runner.invoke(app, ["reconcile-cost", "--help"])
+    # Wide width avoids Rich wrapping the flag; strip ANSI so the substring check
+    # is robust to Rich colour output in CI (plain locally, coloured on the runner).
+    result = runner.invoke(app, ["reconcile-cost", "--help"], env={"COLUMNS": "200"})
     assert result.exit_code == 0
-    assert "--run-id" not in result.stdout
-    assert "--run-file" in result.stdout
+    plain = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+    assert "--run-id" not in plain
+    assert "--run-file" in plain

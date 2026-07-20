@@ -55,6 +55,57 @@ def test_metadata_carries_correlation_ids() -> None:
     assert captured["body"]["metadata"]["trace_id"] == trace_id
 
 
+def test_body_carries_langfuse_native_dimension_keys() -> None:
+    """Hermetic: the request body carries the LiteLLM→Langfuse native-dimension keys.
+
+    Proves only that the APPLICATION SENDS the reserved keys — NOT that LiteLLM's
+    pinned callback promotes them to native Langfuse fields (that is Gate 3,
+    tests/integration/test_litellm_langfuse_pin.py).
+    """
+    captured: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        import json
+
+        captured["body"] = json.loads(request.content.decode())
+        return httpx.Response(
+            200,
+            json={"id": "c", "choices": [{"message": {"role": "assistant", "content": "ok"}}]},
+        )
+
+    cfg = GatewayConfig(base_url="http://proxy.test/v1", virtual_key="sk-virtual")
+    client = GatewayClient(cfg, transport=httpx.MockTransport(handler))
+    meta = RequestMetadata(
+        request_id=str(uuid.uuid4()),
+        service="checkout",
+        feature="chat",
+        environment="production",
+        release="1.4.2",
+        model_alias="llm-general",
+        session_id="sess-1",
+        user_id="usr_" + "a" * 16,
+    )
+    client.chat(
+        model="llm-general",
+        messages=[{"role": "user", "content": "hi"}],
+        metadata=meta,
+    )
+    client.close()
+    md = captured["body"]["metadata"]
+    assert md["trace_name"] == "checkout:chat"
+    assert md["generation_name"] == "checkout:chat"
+    assert md["trace_release"] == "1.4.2"
+    assert md["trace_user_id"] == "usr_" + "a" * 16
+    assert md["session_id"] == "sess-1"  # flows natively under its own key
+    assert md["tags"] == [
+        "env:production",
+        "service:checkout",
+        "feature:chat",
+        "model_alias:llm-general",
+    ]
+    assert "version" not in md  # release must not be mislabeled as version
+
+
 @pytest.mark.skipif(
     os.environ.get("LLG_LIVE") != "1",
     reason="Live stack required (set LLG_LIVE=1)",

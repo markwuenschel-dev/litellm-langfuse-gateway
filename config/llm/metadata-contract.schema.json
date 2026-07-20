@@ -64,7 +64,8 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 128,
-      "description": "Optional pseudonymous user id (no raw email/name/MRN)."
+      "pattern": "^usr_[A-Za-z0-9_\\-]{16,80}$",
+      "description": "Optional pseudonymous user id, promoted to the native Langfuse User dimension (trace_user_id). Must match 'usr_<opaque>' (usr_ + 16-80 chars [A-Za-z0-9_-]); derive via a keyed HMAC. No raw email/name/MRN. Runtime enforcement is pure-Python (metadata.py)."
     },
     "tenant_id": {
       "type": "string",
