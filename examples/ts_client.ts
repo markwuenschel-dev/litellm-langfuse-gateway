@@ -99,7 +99,9 @@ async function main(): Promise<void> {
         `model_alias:${model}`,
       ],
       // trace_user_id: "usr_<opaque>",  // pseudonymous only — see privacy doc
-    },
+      // `tags` is an array; the OpenAI SDK types metadata as Record<string,string>,
+      // so cast — LiteLLM's langfuse callback reads the array at runtime.
+    } as unknown as Record<string, string>,
   });
 
   console.log(`request_id=${requestId} service=${service} model=${model}`);

@@ -82,6 +82,4 @@ def test_reserved_keys_disjoint_from_contract() -> None:
 
 def test_emitted_keys_are_all_reserved() -> None:
     """Everything the projection emits is a declared reserved key (guard coverage)."""
-    assert set(langfuse_fields(_meta(user_id="usr_" + "c" * 16))).issubset(
-        LANGFUSE_RESERVED_KEYS
-    )
+    assert set(langfuse_fields(_meta(user_id="usr_" + "c" * 16))).issubset(LANGFUSE_RESERVED_KEYS)
