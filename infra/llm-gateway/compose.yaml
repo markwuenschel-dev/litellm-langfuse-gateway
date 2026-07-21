@@ -74,6 +74,7 @@ services:
       AZURE_API_BASE: ${AZURE_API_BASE:-}
       COHERE_API_KEY: ${COHERE_API_KEY:-}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
+      MOONSHOT_API_KEY: ${MOONSHOT_API_KEY:-}
 
       # Langfuse Cloud
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
