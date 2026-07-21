@@ -84,6 +84,14 @@ k8s sketch (pinned image, probes, secret refs): `k8s/README.md`.
 | Revoke | Default `delete`; `--mode block` soft-disables without hard delete |
 | Do not | Commit virtual keys; put master key in app env; log full tokens in CI |
 
+> **Keys die with the Postgres volume.** Virtual keys are not self-validating tokens — they are
+> lookups against `LiteLLM_VerificationToken` in the `postgres_data` volume. Dropping that volume
+> (`llg down -v`, `docker volume prune`, re-provisioning) silently orphans **every** key already
+> stored in consumer `.env` files: the string survives, the row that made it mean something doesn't,
+> and requests fail `401 token_not_found_in_db` with no other warning. After any volume drop,
+> re-mint keys (`llg keys create`) and update every consumer. The Windows autostart script
+> (`start-gateway.ps1`) logs the alias inventory on each boot and warns when the registry is empty.
+
 Live integration tests (skipped unless opted in):
 
 ```bash

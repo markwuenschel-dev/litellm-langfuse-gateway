@@ -186,7 +186,12 @@ def down(
         False,
         "--volumes",
         "-v",
-        help="Remove named volumes (destructive: drops Postgres data).",
+        help=(
+            "Remove named volumes (destructive: drops Postgres data, which "
+            "silently orphans every minted virtual key — consumer .envs keep "
+            "the string but requests fail 401 token_not_found_in_db; re-mint "
+            "with `llg keys create` after)."
+        ),
     ),
 ) -> None:
     """Stop the gateway Compose stack."""

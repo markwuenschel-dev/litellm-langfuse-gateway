@@ -61,6 +61,46 @@ aliases:
     consumers:
       - provider-smoke
 
+  # --- ibkr-auto-trader collab seat (pass-through; deliberately provider-versioned) ---
+  # These names are exact provider model IDs, not stable tiers: the collab seat
+  # pins its models by name, so renaming here would break the seat's requests.
+  # Keep in lockstep with the matching model_list block in litellm-config.yaml.
+
+  gpt-5.6-luna:
+    description: ibkr-auto-trader collab seat pass-through (OpenAI gpt-5.6-luna, pinned by the seat)
+    litellm_model: openai/gpt-5.6-luna
+    api_key_env: OPENAI_API_KEY
+    consumers:
+      - ibkr-auto-trader-collab
+
+  gpt-5.6-terra:
+    description: ibkr-auto-trader collab seat pass-through (OpenAI gpt-5.6-terra, pinned by the seat)
+    litellm_model: openai/gpt-5.6-terra
+    api_key_env: OPENAI_API_KEY
+    consumers:
+      - ibkr-auto-trader-collab
+
+  gpt-5.5:
+    description: ibkr-auto-trader collab seat pass-through (OpenAI gpt-5.5, pinned by the seat)
+    litellm_model: openai/gpt-5.5
+    api_key_env: OPENAI_API_KEY
+    consumers:
+      - ibkr-auto-trader-collab
+
+  grok-4.5:
+    description: ibkr-auto-trader collab seat pass-through (xAI grok-4.5, pinned by the seat)
+    litellm_model: xai/grok-4.5
+    api_key_env: XAI_API_KEY
+    consumers:
+      - ibkr-auto-trader-collab
+
+  gemini-3.5-flash:
+    description: ibkr-auto-trader collab seat pass-through (Gemini 3.5 Flash, pinned by the seat)
+    litellm_model: gemini/gemini-3.5-flash
+    api_key_env: GEMINI_API_KEY
+    consumers:
+      - ibkr-auto-trader-collab
+
 # Deferred until a consumer requires a second tier (plan §7.1 / WP11).
 # deferred:
 #   llm-fast:
