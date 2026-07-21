@@ -101,6 +101,24 @@ aliases:
     consumers:
       - ibkr-auto-trader-collab
 
+  # --- Moonshot / Kimi (pass-through; user-requested 2026-07-21) ---
+  # Exact provider model IDs verified against api.moonshot.ai /v1/models; the
+  # account exposes only these two (no kimi-k3 as of 2026-07-21).
+
+  kimi-k2.6:
+    description: Moonshot Kimi K2.6 pass-through (user-requested; pinned provider ID)
+    litellm_model: moonshot/kimi-k2.6
+    api_key_env: MOONSHOT_API_KEY
+    consumers:
+      - user-direct
+
+  kimi-k2.7-code:
+    description: Moonshot Kimi K2.7 Code pass-through (user-requested; pinned provider ID)
+    litellm_model: moonshot/kimi-k2.7-code
+    api_key_env: MOONSHOT_API_KEY
+    consumers:
+      - user-direct
+
 # Deferred until a consumer requires a second tier (plan §7.1 / WP11).
 # deferred:
 #   llm-fast:
