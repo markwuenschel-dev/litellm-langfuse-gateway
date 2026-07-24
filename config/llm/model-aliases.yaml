@@ -101,6 +101,13 @@ aliases:
     consumers:
       - ibkr-auto-trader-collab
 
+  haiku-4.5:
+    description: ibkr-auto-trader collab seat pass-through (Anthropic Claude Haiku 4.5, pinned by the seat)
+    litellm_model: anthropic/claude-haiku-4-5-20251001
+    api_key_env: ANTHROPIC_API_KEY
+    consumers:
+      - ibkr-auto-trader-collab
+
   # --- Moonshot / Kimi (pass-through; user-requested 2026-07-21) ---
   # Exact provider model IDs verified against api.moonshot.ai /v1/models; the
   # account exposes only these two (no kimi-k3 as of 2026-07-21).

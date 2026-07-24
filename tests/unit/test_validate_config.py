@@ -43,6 +43,23 @@ def test_repo_config_exposes_stable_aliases() -> None:
     assert names >= stable
 
 
+def test_ibkr_collab_haiku_alias_uses_gateway_anthropic_route() -> None:
+    aliases = yaml.safe_load(DEFAULT_ALIASES.read_text(encoding="utf-8"))["aliases"]
+    haiku = aliases["haiku-4.5"]
+    assert haiku["litellm_model"] == "anthropic/claude-haiku-4-5-20251001"
+    assert haiku["api_key_env"] == "ANTHROPIC_API_KEY"
+    assert "ibkr-auto-trader-collab" in haiku["consumers"]
+
+    config = yaml.safe_load(
+        (REPO_ROOT / "infra" / "llm-gateway" / "litellm-config.yaml").read_text(encoding="utf-8")
+    )
+    routes = {item["model_name"]: item["litellm_params"] for item in config["model_list"]}
+    assert routes["haiku-4.5"] == {
+        "model": "anthropic/claude-haiku-4-5-20251001",
+        "api_key": "os.environ/ANTHROPIC_API_KEY",
+    }
+
+
 def test_stable_aliases_derived_from_yaml_not_hardcoded() -> None:
     """INT-002: adding an alias in YAML expands the derived set."""
     stable = load_stable_aliases()
