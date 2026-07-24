@@ -72,6 +72,11 @@ model_list:
       model: gemini/gemini-3.5-flash
       api_key: os.environ/GEMINI_API_KEY
 
+  - model_name: haiku-4.5
+    litellm_params:
+      model: anthropic/claude-haiku-4-5-20251001
+      api_key: os.environ/ANTHROPIC_API_KEY
+
   # --- Moonshot / Kimi (pass-through; account exposes exactly these two IDs, verified
   # against api.moonshot.ai /v1/models on 2026-07-21 — no kimi-k3 yet) ---
   - model_name: kimi-k2.6
